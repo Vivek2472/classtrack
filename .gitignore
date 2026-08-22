@@ -1,0 +1,13 @@
+# Local environment and private configuration
+js/config.js
+.env
+.env.local
+.env.*.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE & Editor files
+.vscode/
+.idea/
