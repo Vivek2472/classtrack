@@ -1,0 +1,12 @@
+{
+  "name": "classtrack",
+  "version": "1.0.0",
+  "description": "Student attendance tracker and smart schedule manager with real-time cloud sync",
+  "main": "index.html",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": ["attendance", "student", "tracker", "timetable"],
+  "author": "",
+  "license": "ISC"
+}

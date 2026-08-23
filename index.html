@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description"
+    content="ClassTrack - High precision attendance tracker and smart schedule manager for students across all courses and semesters.">
+  <meta name="theme-color" content="#0f172a">
+  <title>ClassTrack - Student Attendance Tracker</title>
+
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+
+  <!-- Tailwind CSS CDN for utility grid and layout -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Immediate Auth & Dark Mode Check before first paint -->
+  <script>
+    try {
+      const cachedState = localStorage.getItem('classtrack_state_cache');
+      if (cachedState) {
+        const parsed = JSON.parse(cachedState);
+        if (parsed?.settings?.darkMode) {
+          document.documentElement.classList.add('dark');
+        }
+      }
+      const hash = (window.location.hash || '').replace('#', '');
+      const cachedUser = localStorage.getItem('classtrack_auth_user');
+      let isAuth = false;
+      if (cachedUser) {
+        const user = JSON.parse(cachedUser);
+        if (user && user.id) isAuth = true;
+      }
+      if (!isAuth) {
+        if (hash === 'signup') {
+          window.location.replace('signup.html');
+        } else if (['forgot-password', 'reset-password'].includes(hash)) {
+          window.location.replace('login.html#' + hash);
+        } else {
+          window.location.replace('login.html');
+        }
+      }
+    } catch (e) {}
+  </script>
+
+  <!-- Custom Design System Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-background text-on-background min-h-screen font-sans flex overflow-x-hidden">
+
+  <!-- ==========================================
+       SIDEBAR NAVIGATION (Stitch Design Spec)
+       ========================================== -->
+  <aside id="app-sidebar" class="flex flex-col">
+    <!-- Brand / App Title -->
+    <div class="flex items-center gap-3 px-3 py-2 mb-6">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white shadow-sm"
+        style="background-color: var(--color-primary);">
+        <span class="material-symbols-outlined" style="font-size: 22px;">school</span>
+      </div>
+      <div>
+        <span class="font-headline-md font-bold tracking-tight block text-primary"
+          style="color: var(--color-on-background); line-height: 1.1;">ClassTrack</span>
+        <span class="font-label-sm block opacity-70"
+          style="font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;">Academic Tracker</span>
+      </div>
+    </div>
+
+    <!-- Student Profile Badge in Sidebar -->
+    <div
+      class="flex items-center gap-3 px-3 py-2.5 mb-6 rounded-xl cursor-pointer hover:bg-slate-200/50 dark:hover:bg-slate-800/50 transition-colors"
+      style="background-color: var(--color-surface-container-low); border: 1px solid var(--color-outline-variant);"
+      onclick="window.ClassTrackApp.openProfileModal()">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-sm shrink-0"
+        style="background-color: var(--color-primary-fixed); color: var(--color-on-primary-fixed); border-color: var(--color-primary-fixed-dim);">
+        <span class="material-symbols-outlined" style="font-size: 22px;">account_circle</span>
+      </div>
+      <div class="overflow-hidden">
+        <h2 class="font-headline-sm font-semibold truncate student-name"
+          style="color: var(--color-on-background); font-size: 0.95rem;">Student</h2>
+        <p class="font-label-sm truncate student-program"
+          style="color: var(--color-on-surface-variant); font-size: 0.725rem;">Academic Profile</p>
+      </div>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="flex flex-col gap-1.5 flex-grow">
+      <a class="nav-item active" data-view="dashboard" onclick="window.ClassTrackApp.navigate('dashboard')">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span>Dashboard</span>
+      </a>
+      <a class="nav-item" data-view="subjects" onclick="window.ClassTrackApp.navigate('subjects')">
+        <span class="material-symbols-outlined">menu_book</span>
+        <span>Subjects</span>
+      </a>
+      <a class="nav-item" data-view="schedule" onclick="window.ClassTrackApp.navigate('schedule')">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <span>Schedule</span>
+      </a>
+      <a class="nav-item" data-view="analytics" onclick="window.ClassTrackApp.navigate('analytics')">
+        <span class="material-symbols-outlined">analytics</span>
+        <span>Analytics</span>
+      </a>
+      <a class="nav-item" data-view="profile" onclick="window.ClassTrackApp.navigate('profile')">
+        <span class="material-symbols-outlined">person</span>
+        <span>Profile</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Bottom Action CTA (Clean settings only, Mark Attendance moved to header top-right) -->
+    <div class="mt-auto pt-4 border-t flex flex-col gap-2" style="border-color: var(--color-outline-variant);">
+      <button class="btn btn-secondary w-full btn-sm flex items-center justify-center gap-2" onclick="window.ClassTrackApp.openProfileModal()"
+        style="font-size: 0.8rem; height: 38px;">
+        <span class="material-symbols-outlined" style="font-size: 18px;">settings</span>
+        Settings & Profile
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==========================================
+       MAIN WRAPPER & TOP NAV
+       ========================================== -->
+  <div id="app-main">
+
+    <!-- Top Navigation Header -->
+    <header id="app-header">
+      <!-- Left: App Logo Badge on Mobile & View Title -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center lg:hidden shadow-sm shrink-0" style="background-color: var(--color-primary); color: #ffffff;">
+          <span class="material-symbols-outlined" style="font-size: 18px;">school</span>
+        </div>
+        <span id="header-title" class="font-headline-md font-bold"
+          style="color: var(--color-on-background);">Overview</span>
+      </div>
+
+      <!-- Right: Mark Attendance (Prominent), Live Clock, Search Bar, Theme Toggle, Profile -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- PROMINENT MARK ATTENDANCE BUTTON AT TOP RIGHT FOR QUICK ACCESS -->
+        <button id="header-mark-attendance-btn" class="btn btn-primary shadow-sm flex items-center gap-1.5 px-3 py-1.5" onclick="window.ClassTrackApp.openLogModal()" title="Mark Attendance Quickly">
+          <span class="material-symbols-outlined" style="font-size: 18px;">how_to_reg</span>
+          <span class="hidden sm:inline font-semibold text-xs sm:text-sm">Mark Attendance</span>
+          <span class="sm:hidden font-semibold text-xs">Mark</span>
+        </button>
+
+        <!-- Real-time Live Calendar & Clock Widget -->
+        <div id="live-calendar-clock" class="live-badge hidden md:flex" title="Real-time date and time sync">
+          <div class="live-dot"></div>
+          <span id="clock-display">Syncing...</span>
+        </div>
+
+        <!-- Live Search Bar with Dropdown -->
+        <div class="relative hidden sm:block">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2"
+            style="font-size: 18px; color: var(--color-on-surface-variant);">search</span>
+          <input id="global-search" type="text" placeholder="Search courses, teachers..."
+            class="form-input rounded-full"
+            style="padding-left: 38px; padding-top: 6px; padding-bottom: 6px; width: 190px; font-size: 0.85rem;">
+
+          <!-- Dropdown Results -->
+          <div id="search-dropdown-results"
+            class="hidden absolute top-full left-0 right-0 mt-2 rounded-xl shadow-xl z-50 overflow-hidden"
+            style="background-color: var(--color-surface); border: 1px solid var(--color-outline-variant); min-width: 280px;">
+          </div>
+        </div>
+
+        <!-- Dark Mode Toggle Button -->
+        <button class="btn-icon" onclick="window.ClassTrackApp.toggleTheme()" title="Toggle Dark / Light Mode">
+          <span class="material-symbols-outlined">dark_mode</span>
+        </button>
+
+        <!-- Profile & Settings Button -->
+        <button class="btn-icon hidden sm:inline-flex" onclick="window.ClassTrackApp.navigate('profile')"
+          title="Student Profile">
+          <span class="material-symbols-outlined">account_circle</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main View Canvas -->
+    <main class="view-container">
+      <div id="view-content">
+        <!-- Dynamic Views will be injected here by router -->
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ==========================================
+       MOBILE BOTTOM NAVIGATION BAR (Stitch Spec)
+       ========================================== -->
+  <nav id="mobile-bottom-nav"
+    class="fixed bottom-0 left-0 w-full flex justify-around items-center px-1 py-1.5 shadow-lg z-50 lg:hidden"
+    style="background-color: var(--color-surface-container-lowest); border-top: 1px solid var(--color-outline-variant); backdrop-filter: blur(12px);">
+    <a class="mobile-nav-item active flex flex-col items-center justify-center px-3 py-1 rounded-xl cursor-pointer transition-all"
+      data-view="dashboard" onclick="window.ClassTrackApp.navigate('dashboard')">
+      <span class="material-symbols-outlined mb-0.5" style="font-size: 22px;">dashboard</span>
+      <span class="font-label-sm" style="font-size: 0.65rem;">Dashboard</span>
+    </a>
+    <a class="mobile-nav-item flex flex-col items-center justify-center px-3 py-1 rounded-xl cursor-pointer transition-all"
+      data-view="schedule" onclick="window.ClassTrackApp.navigate('schedule')">
+      <span class="material-symbols-outlined mb-0.5" style="font-size: 22px;">calendar_month</span>
+      <span class="font-label-sm" style="font-size: 0.65rem;">Schedule</span>
+    </a>
+    <a class="mobile-nav-item flex flex-col items-center justify-center px-3 py-1 rounded-xl cursor-pointer transition-all"
+      data-view="subjects" onclick="window.ClassTrackApp.navigate('subjects')">
+      <span class="material-symbols-outlined mb-0.5" style="font-size: 22px;">menu_book</span>
+      <span class="font-label-sm" style="font-size: 0.65rem;">Subjects</span>
+    </a>
+    <a class="mobile-nav-item flex flex-col items-center justify-center px-3 py-1 rounded-xl cursor-pointer transition-all"
+      data-view="analytics" onclick="window.ClassTrackApp.navigate('analytics')">
+      <span class="material-symbols-outlined mb-0.5" style="font-size: 22px;">analytics</span>
+      <span class="font-label-sm" style="font-size: 0.65rem;">Analytics</span>
+    </a>
+    <a class="mobile-nav-item flex flex-col items-center justify-center px-3 py-1 rounded-xl cursor-pointer transition-all"
+      data-view="profile" onclick="window.ClassTrackApp.navigate('profile')">
+      <span class="material-symbols-outlined mb-0.5" style="font-size: 22px;">person</span>
+      <span class="font-label-sm" style="font-size: 0.65rem;">Profile</span>
+    </a>
+  </nav>
+
+  <!-- ==========================================
+       GLOBAL MODAL OVERLAY
+       ========================================== -->
+  <div id="modal-overlay" class="modal-overlay" onclick="if(event.target === this) window.EduTrackApp.closeModal()">
+    <div id="modal-content" class="modal-container">
+      <!-- Injected modal forms -->
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- ==========================================
+       SCRIPTS (ClassTrack Core Engine)
+       ========================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/views/auth.js"></script>
+  <script src="js/views/dashboard.js"></script>
+  <script src="js/views/subjects.js"></script>
+  <script src="js/views/schedule.js"></script>
+  <script src="js/views/analytics.js"></script>
+  <script src="js/views/profile.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+
+</html>

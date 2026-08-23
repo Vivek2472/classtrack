@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sign in to ClassTrack - Manage your courses, schedule, and attendance.">
+  <meta name="theme-color" content="#0f172a">
+  <title>ClassTrack - Student Sign In</title>
+
+  <!-- Immediate Auth & Dark Mode Check before first paint -->
+  <script>
+    try {
+      const hash = window.location.hash || '';
+      const cachedState = localStorage.getItem('classtrack_state_cache');
+      if (cachedState) {
+        const parsed = JSON.parse(cachedState);
+        if (parsed?.settings?.darkMode) {
+          document.documentElement.classList.add('dark');
+        }
+      }
+      const cachedUser = localStorage.getItem('classtrack_auth_user');
+      if (cachedUser) {
+        const user = JSON.parse(cachedUser);
+        if (user && user.id && !hash.includes('reset-password')) {
+          window.location.replace('index.html');
+        }
+      }
+    } catch (e) {}
+  </script>
+
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Design System Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="bg-background text-on-background min-h-screen font-sans overflow-x-hidden">
+
+  <div class="auth-fullscreen-wrapper min-h-screen w-full flex flex-col lg:flex-row">
+    
+    <!-- Left Showcase Panel (Desktop) -->
+    <div class="auth-showcase-panel hidden lg:flex lg:w-1/2 p-8 xl:p-14 flex-col justify-between relative">
+      <!-- Ambient Glow Circles -->
+      <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl pointer-events-none"></div>
+
+      <!-- Top Brand Header -->
+      <div class="relative z-10 flex items-center gap-3">
+        <a href="landing.html" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg font-bold text-white bg-blue-600">
+            <span class="material-symbols-outlined" style="font-size: 26px;">school</span>
+          </div>
+          <div>
+            <span class="text-xl font-bold tracking-tight text-white block leading-tight">ClassTrack</span>
+            <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">Student Attendance Suite</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Center Value Proposition & Live Visual Cards -->
+      <div class="relative z-10 my-auto py-8 max-w-lg">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs text-blue-300 font-semibold mb-5">
+          <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+          <span>Universal Student Attendance Tracker</span>
+        </div>
+
+        <h1 class="text-3xl xl:text-4xl font-extrabold text-white tracking-tight leading-tight mb-4">
+          Master your academic schedule with confidence.
+        </h1>
+        <p class="text-sm xl:text-base text-slate-300 mb-8 leading-relaxed">
+          Designed for all students, majors, and programs. Easily manage timetable schedules, record daily class attendance, and monitor attendance thresholds in real time.
+        </p>
+
+        <!-- Feature Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div class="auth-glass-card p-3.5 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined" style="font-size: 18px;">schedule</span>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white">Smart Timetable</h4>
+              <p class="text-[11px] text-slate-300 leading-tight mt-0.5">Live duration sync &amp; daily scheduling</p>
+            </div>
+          </div>
+
+          <div class="auth-glass-card p-3.5 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined" style="font-size: 18px;">fact_check</span>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white">1-Click Attendance</h4>
+              <p class="text-[11px] text-slate-300 leading-tight mt-0.5">Quickly mark present, absent, or OD</p>
+            </div>
+          </div>
+
+          <div class="auth-glass-card p-3.5 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined" style="font-size: 18px;">auto_graph</span>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white">Target Analytics</h4>
+              <p class="text-[11px] text-slate-300 leading-tight mt-0.5">Stay safely above minimum criteria</p>
+            </div>
+          </div>
+
+          <div class="auth-glass-card p-3.5 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined" style="font-size: 18px;">cloud_done</span>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-white">Instant Cloud Sync</h4>
+              <p class="text-[11px] text-slate-300 leading-tight mt-0.5">Seamless across all your devices</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Note -->
+      <div class="relative z-10 flex items-center justify-between text-xs text-slate-400 border-t border-white/10 pt-4">
+        <span>ClassTrack Academic Platform</span>
+        <span>Built by students, for students</span>
+      </div>
+    </div>
+
+    <!-- Right Form Panel -->
+    <div class="auth-form-panel flex-1 flex flex-col justify-center items-center p-6 sm:p-10 lg:p-12 overflow-y-auto min-h-screen">
+      
+      <!-- 1. SIGN IN VIEW (Default) -->
+      <div id="panel-login" class="w-full max-w-[440px] flex flex-col gap-5 my-auto">
+        
+        <!-- Mobile Brand Header -->
+        <div class="flex flex-col items-center text-center gap-1.5 lg:hidden mb-2">
+          <a href="landing.html" class="flex flex-col items-center gap-1.5">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md text-white bg-blue-600 mb-1">
+              <span class="material-symbols-outlined" style="font-size: 26px;">school</span>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-primary">ClassTrack</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Student Attendance Tracker</p>
+          </a>
+        </div>
+
+        <!-- Header Section -->
+        <div class="flex flex-col gap-1 text-center sm:text-left">
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight" style="color: var(--color-on-background);">Welcome back</h2>
+          <p class="font-body-sm" style="color: var(--color-on-surface-variant);">
+            Sign in to manage your classes, schedule, and attendance.
+          </p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="auth-login-form" class="flex flex-col gap-4" onsubmit="handleLoginSubmit(event)">
+          
+          <!-- Email Input -->
+          <div class="flex flex-col gap-1.5">
+            <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="login-email">
+              Email Address
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">mail</span>
+              <input id="login-email" type="email" name="email" required placeholder="you@example.com" class="form-input font-body-md" style="padding-left: 42px; height: 46px; border-radius: 10px;">
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex justify-between items-center">
+              <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="login-password">
+                Password
+              </label>
+              <button type="button" onclick="showPanel('forgot')" class="font-body-sm hover:underline" style="color: var(--color-primary); font-size: 0.8rem; font-weight: 500;">
+                Forgot password?
+              </button>
+            </div>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">lock</span>
+              <input id="login-password" type="password" name="password" required placeholder="••••••••" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;">
+              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1" onclick="togglePasswordVisibility('login-password', this)">
+                <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember Me -->
+          <div class="flex items-center gap-2 mt-0.5">
+            <input id="login-remember" type="checkbox" name="remember" checked class="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer">
+            <label for="login-remember" class="font-body-sm cursor-pointer select-none text-xs" style="color: var(--color-on-surface-variant);">Remember me on this device</label>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn btn-primary w-full shadow-md mt-1 flex items-center justify-center gap-2" style="height: 48px; border-radius: 10px; font-size: 0.95rem; font-weight: 600;">
+            <span>SIGN IN</span>
+            <span class="material-symbols-outlined" style="font-size: 20px;">arrow_forward</span>
+          </button>
+
+        </form>
+
+        <!-- Bottom Switch to Sign Up -->
+        <div class="mt-2 pt-3 border-t text-center" style="border-color: var(--color-outline-variant);">
+          <p class="font-body-sm text-xs" style="color: var(--color-on-surface-variant);">
+            New to ClassTrack? 
+            <a href="signup.html" class="font-bold underline underline-offset-4 hover:text-primary transition-colors ml-1" style="color: var(--color-on-background);">
+              Create an Account
+            </a>
+          </p>
+        </div>
+
+      </div>
+
+      <!-- 2. FORGOT PASSWORD VIEW (Hidden by default) -->
+      <div id="panel-forgot" class="hidden w-full max-w-[420px] flex-col gap-5 my-auto">
+        <button type="button" class="btn btn-secondary btn-sm self-start flex items-center gap-1.5 mb-2" onclick="showPanel('login')">
+          <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+          <span>Back to Sign In</span>
+        </button>
+
+        <div class="flex flex-col gap-1">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm text-blue-600 bg-blue-100 dark:bg-blue-950/60 mb-2">
+            <span class="material-symbols-outlined" style="font-size: 26px;">lock_reset</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold" style="color: var(--color-on-background);">Forgot Password</h2>
+          <p class="font-body-sm" style="color: var(--color-on-surface-variant);">
+            Enter your email address and we'll send you a link to reset your password.
+          </p>
+        </div>
+
+        <form id="auth-forgot-form" class="flex flex-col gap-4" onsubmit="handleForgotPasswordSubmit(event)">
+          <div class="flex flex-col gap-1.5">
+            <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="forgot-email">
+              Email Address
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">mail</span>
+              <input id="forgot-email" type="email" name="email" required placeholder="you@example.com" class="form-input font-body-md" style="padding-left: 42px; height: 46px; border-radius: 10px;">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full shadow-md mt-1 flex items-center justify-center gap-2" style="height: 48px; border-radius: 10px; font-size: 0.95rem; font-weight: 600;">
+            <span>SEND RESET LINK</span>
+            <span class="material-symbols-outlined" style="font-size: 18px;">send</span>
+          </button>
+        </form>
+
+        <div class="text-center pt-2">
+          <p class="font-body-sm text-xs" style="color: var(--color-on-surface-variant);">
+            Remember your password? 
+            <button type="button" onclick="showPanel('login')" class="font-bold underline underline-offset-4 hover:text-primary transition-colors ml-1" style="color: var(--color-on-background);">
+              Sign in
+            </button>
+          </p>
+        </div>
+      </div>
+
+      <!-- 3. RESET PASSWORD VIEW (Activated via #reset-password URL) -->
+      <div id="panel-reset" class="hidden w-full max-w-[420px] flex-col gap-5 my-auto">
+        <div class="flex flex-col gap-1">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm text-blue-600 bg-blue-100 dark:bg-blue-950/60 mb-2">
+            <span class="material-symbols-outlined" style="font-size: 26px;">password</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold" style="color: var(--color-on-background);">Create New Password</h2>
+          <p class="font-body-sm" style="color: var(--color-on-surface-variant);">Choose a strong new password for your account.</p>
+        </div>
+
+        <form id="auth-reset-form" class="flex flex-col gap-4" onsubmit="handleResetPasswordSubmit(event)">
+          <div class="flex flex-col gap-1.5">
+            <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="reset-new-password">
+              New Password
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">lock</span>
+              <input id="reset-new-password" type="password" required minlength="6" placeholder="Enter new password" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;">
+              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1" onclick="togglePasswordVisibility('reset-new-password', this)">
+                <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="reset-confirm-password">
+              Confirm New Password
+            </label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">lock_clock</span>
+              <input id="reset-confirm-password" type="password" required minlength="6" placeholder="Confirm new password" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;">
+              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1" onclick="togglePasswordVisibility('reset-confirm-password', this)">
+                <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full shadow-md mt-1 flex items-center justify-center gap-2" style="height: 48px; border-radius: 10px; font-size: 0.95rem; font-weight: 600;">
+            <span>UPDATE PASSWORD</span>
+            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+          </button>
+        </form>
+
+        <div class="text-center pt-2">
+          <button type="button" onclick="showPanel('login')" class="font-label-sm text-xs hover:text-primary transition-colors inline-flex items-center gap-1.5" style="color: var(--color-on-surface-variant);">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            <span>Back to Sign In</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Core Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      let icon = 'info';
+      if (type === 'success') icon = 'check_circle';
+      else if (type === 'warning') icon = 'warning';
+      else if (type === 'error') icon = 'error';
+      toast.innerHTML = `<span class="material-symbols-outlined" style="font-size: 20px;">${icon}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // Toggle Password Field
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const icon = btn.querySelector('.material-symbols-outlined');
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) icon.textContent = 'visibility';
+      } else {
+        input.type = 'password';
+        if (icon) icon.textContent = 'visibility_off';
+      }
+    }
+
+    // Panel Switcher
+    function showPanel(panelName) {
+      document.getElementById('panel-login').classList.add('hidden');
+      document.getElementById('panel-login').classList.remove('flex');
+      document.getElementById('panel-forgot').classList.add('hidden');
+      document.getElementById('panel-forgot').classList.remove('flex');
+      document.getElementById('panel-reset').classList.add('hidden');
+      document.getElementById('panel-reset').classList.remove('flex');
+
+      const target = document.getElementById(`panel-${panelName}`);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('flex');
+      }
+    }
+
+    // Pre-fill remembered email
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedEmail = localStorage.getItem('classtrack_remember_email');
+      if (savedEmail) {
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) emailInput.value = savedEmail;
+      }
+
+      if (window.location.hash === '#reset-password') {
+        showPanel('reset');
+      } else if (window.location.hash === '#forgot-password') {
+        showPanel('forgot');
+      } else {
+        showPanel('login');
+      }
+    });
+
+    // Form Submissions
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalHTML = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> <span>Signing in...</span>';
+      }
+
+      try {
+        const formData = new FormData(e.target);
+        const email = (formData.get('email') || '').trim();
+        const password = formData.get('password');
+        const remember = formData.get('remember') !== null;
+
+        if (remember && email) {
+          localStorage.setItem('classtrack_remember_email', email);
+        } else {
+          localStorage.removeItem('classtrack_remember_email');
+        }
+
+        const res = await window.ClassTrackAuth.login(email, password);
+        if (res.success) {
+          showToast(`Welcome back, ${res.user.fullName}!`, 'success');
+          setTimeout(() => {
+            window.location.replace('index.html');
+          }, 400);
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Login error occurred.', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHTML;
+        }
+      }
+    }
+
+    async function handleForgotPasswordSubmit(e) {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalHTML = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> <span>Sending link...</span>';
+      }
+
+      try {
+        const email = (new FormData(e.target).get('email') || '').trim();
+        const res = await window.ClassTrackAuth.sendPasswordReset(email);
+        if (res.success) {
+          showToast(res.message || 'Password reset link sent to your email!', 'success');
+        } else {
+          showToast(res.error, 'error');
+        }
+      } catch (err) {
+        showToast(err.message || 'Error sending reset email.', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalHTML;
+        }
+      }
+    }
+
+    async function handleResetPasswordSubmit(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('reset-new-password')?.value;
+      const confirmPass = document.getElementById('reset-confirm-password')?.value;
+
+      if (newPass !== confirmPass) {
+        showToast('Passwords do not match.', 'error');
+        return;
+      }
+
+      const res = await window.ClassTrackAuth.resetPassword(newPass);
+      if (res.success) {
+        showToast('Password reset successfully! Please sign in.', 'success');
+        showPanel('login');
+      } else {
+        showToast(res.error, 'error');
+      }
+    }
+  </script>
+
+</body>
+
+</html>

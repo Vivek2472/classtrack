@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="ClassTrack — Precision attendance tracker and smart schedule manager for engineering and college students. Never miss the 75% cutoff again.">
+  <meta name="theme-color" content="#0f172a">
+  <title>ClassTrack — Never Miss the 75% Cutoff Again</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    /* =========================================================
+       DESIGN TOKENS — exact match to ClassTrack style.css
+       ========================================================= */
+    :root {
+      --color-primary: #0f172a;
+      --color-primary-container: #131b2e;
+      --color-on-primary: #ffffff;
+      --color-on-primary-container: #7c839b;
+      --color-primary-fixed: #dae2fd;
+      --color-primary-fixed-dim: #bec6e0;
+      --color-on-primary-fixed: #131b2e;
+
+      --color-secondary: #515f74;
+      --color-secondary-container: #d5e3fd;
+      --color-on-secondary: #ffffff;
+      --color-on-secondary-container: #1d293d;
+
+      --color-background: #f7f9fb;
+      --color-on-background: #191c1e;
+      --color-surface: #ffffff;
+      --color-surface-container-lowest: #ffffff;
+      --color-surface-container-low: #f2f4f6;
+      --color-surface-container: #eceef0;
+      --color-surface-container-high: #e6e8ea;
+      --color-on-surface: #191c1e;
+      --color-on-surface-variant: #45464d;
+      --color-outline: #76777d;
+      --color-outline-variant: #e2e8f0;
+
+      --color-safe: #10b981;
+      --color-safe-bg: #ecfdf5;
+      --color-safe-border: #a7f3d0;
+      --color-safe-text: #065f46;
+
+      --color-warning: #f59e0b;
+      --color-warning-bg: #fffbeb;
+      --color-warning-border: #fde68a;
+
+      --color-error: #ba1a1a;
+      --color-critical: #f43f5e;
+
+      --theory-bg: #e0e7ff; --theory-border: #4f46e5; --theory-text: #1e1b4b;
+      --lab-bg: #f3e8ff;   --lab-border: #9333ea;   --lab-text: #3b0764;
+      --tutorial-bg: #dcfce7; --tutorial-border: #16a34a; --tutorial-text: #052e16;
+
+      --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --shadow-card: 0px 4px 12px rgba(15,23,42,0.05);
+      --shadow-card-hover: 0px 8px 24px rgba(15,23,42,0.09);
+      --shadow-modal: 0 20px 25px -5px rgba(15,23,42,0.15), 0 8px 10px -6px rgba(15,23,42,0.1);
+
+      --transition-fast: all 0.15s ease;
+      --transition-normal: all 0.25s cubic-bezier(0.4,0,0.2,1);
+
+      /* Fold Text Custom Properties */
+      --fold-perspective: 800px;
+    }
+
+    body.dark {
+      --color-background: #0b0f19;
+      --color-on-background: #f1f5f9;
+      --color-surface: #131b2e;
+      --color-surface-container-lowest: #101726;
+      --color-surface-container-low: #151f33;
+      --color-surface-container: #1a253c;
+      --color-surface-container-high: #24324f;
+      --color-on-surface: #f1f5f9;
+      --color-on-surface-variant: #94a3b8;
+      --color-outline: #64748b;
+      --color-outline-variant: #334155;
+      --color-primary: #38bdf8;
+      --color-on-primary: #0f172a;
+      --color-secondary-container: #1e293b;
+      --color-on-secondary-container: #93c5fd;
+      --color-safe: #34d399;
+      --color-safe-bg: rgba(6,78,59,0.2);
+      --color-safe-border: #059669;
+      --color-safe-text: #6ee7b7;
+      --color-warning-bg: rgba(120,53,15,0.2);
+      --color-warning-border: #d97706;
+      --color-critical: #fb7185;
+      --theory-bg: rgba(49,46,129,0.25); --theory-border: #6366f1; --theory-text: #c7d2fe;
+      --lab-bg: rgba(88,28,135,0.25);   --lab-border: #a855f7;   --lab-text: #e9d5ff;
+      --tutorial-bg: rgba(6,78,59,0.25);--tutorial-border: #22c55e; --tutorial-text: #bbf7d0;
+      --shadow-card: 0px 4px 16px rgba(0,0,0,0.4);
+      --shadow-card-hover: 0px 8px 24px rgba(0,0,0,0.6);
+    }
+
+    /* =========================================================  RESET & GLOBAL  */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+
+    body {
+      font-family: var(--font-primary);
+      background-color: var(--color-background);
+      color: var(--color-on-background);
+      min-height: 100vh;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal; font-style: normal; font-size: 22px; line-height: 1;
+      letter-spacing: normal; text-transform: none; display: inline-block;
+      white-space: nowrap; word-wrap: normal; direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      font-variation-settings: 'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+      vertical-align: middle;
+    }
+
+    /* =========================================================  FOLD TEXT ANIMATION  */
+    .fold-text {
+      display: inline-block;
+      color: var(--fold-text-color, currentColor);
+      font-size: var(--fold-text-font-size, inherit);
+      font-weight: var(--fold-text-font-weight, inherit);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      white-space: pre-wrap;
+      user-select: text;
+    }
+
+    .fold-text-sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .fold-text-visual {
+      display: inline;
+    }
+
+    .fold-text-line {
+      display: block;
+    }
+
+    .fold-text-whitespace {
+      display: inline;
+    }
+
+    .fold-text-segment {
+      display: inline-block;
+      line-height: inherit;
+      perspective: var(--fold-perspective, 700px);
+      transform-style: preserve-3d;
+      vertical-align: baseline;
+    }
+
+    .fold-text-segment[data-fold-split='line'] {
+      display: block;
+    }
+
+    .fold-text-piece {
+      position: relative;
+      display: inline-block;
+      color: inherit;
+      line-height: inherit;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      will-change: transform, opacity;
+      transition: transform 1.05s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fold-text-piece[data-fold-hinge='top'] {
+      transform-origin: top center;
+    }
+
+    .fold-text-piece[data-fold-hinge='bottom'] {
+      transform-origin: bottom center;
+    }
+
+    .fold-text-piece[data-fold-hinge='left'] {
+      transform-origin: center left;
+    }
+
+    .fold-text-piece[data-fold-hinge='right'] {
+      transform-origin: center right;
+    }
+
+    /* No grey background overlay box artifact — clean 3D text folding */
+    .fold-text-piece::after {
+      display: none;
+    }
+
+    /* Folded initial state */
+    .fold-text-piece.is-folded[data-fold-hinge='top'] {
+      transform: rotateX(-90deg) translateZ(0);
+      opacity: 0;
+    }
+
+    .fold-text-piece.is-folded[data-fold-hinge='bottom'] {
+      transform: rotateX(90deg) translateZ(0);
+      opacity: 0;
+    }
+
+    .fold-text-piece.is-folded[data-fold-hinge='left'] {
+      transform: rotateY(-90deg) translateZ(0);
+      opacity: 0;
+    }
+
+    .fold-text-piece.is-folded[data-fold-hinge='right'] {
+      transform: rotateY(90deg) translateZ(0);
+      opacity: 0;
+    }
+
+    .fold-text-piece.is-unfolded {
+      transform: rotateX(0deg) rotateY(0deg) translateZ(0) !important;
+      opacity: 1 !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fold-text-piece {
+        transform: none !important;
+        opacity: 1 !important;
+        transition: none !important;
+      }
+    }
+
+    /* =========================================================  NAV  */
+    #landing-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 64px; display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(16px,4vw,48px);
+      background-color: transparent;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+    }
+    #landing-nav.scrolled {
+      background-color: rgba(247,249,251,0.92);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 1px 0 var(--color-outline-variant), 0 1px 8px rgba(15,23,42,0.06);
+    }
+    body.dark #landing-nav.scrolled { background-color: rgba(11,15,25,0.92); }
+
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; flex-shrink: 0; }
+    .nav-logo-badge {
+      width: 36px; height: 36px; border-radius: 10px;
+      background-color: #0f172a; display: flex; align-items: center;
+      justify-content: center; color: #fff; flex-shrink: 0; transition: var(--transition-normal);
+    }
+    body.dark .nav-logo-badge { background-color: #38bdf8; color: #0f172a; }
+    .nav-logo-badge .material-symbols-outlined { font-size: 18px; }
+    .nav-logo-text { font-weight: 700; font-size: 1.05rem; color: var(--color-on-background); letter-spacing: -0.02em; }
+
+    .nav-links { display: flex; align-items: center; gap: 4px; list-style: none; }
+    .nav-links a {
+      text-decoration: none; font-size: 0.875rem; font-weight: 500;
+      color: var(--color-on-surface-variant);
+      padding: 6px 14px; border-radius: 8px;
+      transition: var(--transition-fast); position: relative;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: 4px; left: 14px; right: 14px;
+      height: 2px; background-color: var(--color-primary); border-radius: 1px;
+      transform: scaleX(0); transform-origin: left; transition: transform 0.2s ease;
+    }
+    .nav-links a:hover { color: var(--color-on-background); background-color: var(--color-surface-container-low); }
+    .nav-links a:hover::after { transform: scaleX(1); }
+
+    .nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: var(--font-primary); font-weight: 600; font-size: 0.875rem;
+      border-radius: 10px; padding: 9px 18px; cursor: pointer; border: none;
+      text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary { background-color: var(--color-primary); color: var(--color-on-primary); box-shadow: 0 2px 8px rgba(15,23,42,0.2); }
+    .btn-primary:hover { box-shadow: 0 4px 16px rgba(15,23,42,0.25); }
+    body.dark .btn-primary { background-color: #38bdf8; color: #0f172a; box-shadow: 0 2px 8px rgba(56,189,248,0.3); }
+    body.dark .btn-primary:hover { box-shadow: 0 4px 16px rgba(56,189,248,0.4); }
+
+    .btn-ghost { background-color: transparent; color: var(--color-on-background); border: 1.5px solid var(--color-outline-variant); }
+    .btn-ghost:hover { border-color: var(--color-outline); background-color: var(--color-surface-container-low); }
+
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 8px; border: none; cursor: pointer;
+      background-color: transparent; color: var(--color-on-surface-variant);
+      display: flex; align-items: center; justify-content: center; transition: var(--transition-fast);
+    }
+    .btn-icon:hover { background-color: var(--color-surface-container); color: var(--color-on-surface); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-actions .btn-ghost { display: none; }
+    }
+
+    /* =========================================================  HERO  */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: clamp(88px, 12vh, 120px) clamp(16px, 5vw, 60px) clamp(48px, 8vh, 80px);
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .hero-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; width: 100%; }
+
+    .dot-grid {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, var(--color-outline-variant) 1px, transparent 1px);
+      background-size: 28px 28px; opacity: 0.6;
+    }
+    body.dark .dot-grid { opacity: 0.18; }
+
+    .hero-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; pointer-events: none; }
+    body.dark .hero-blob { opacity: 0.18; }
+
+    .blob-1 {
+      width: clamp(300px, 40vw, 560px); height: clamp(300px, 40vw, 560px);
+      background: radial-gradient(circle, #bec6e0 0%, transparent 70%);
+      top: -100px; right: -60px; animation: blobFloat1 14s ease-in-out infinite;
+    }
+    .blob-2 {
+      width: clamp(240px, 30vw, 400px); height: clamp(240px, 30vw, 400px);
+      background: radial-gradient(circle, #d5e3fd 0%, transparent 70%);
+      bottom: -60px; left: 5%; animation: blobFloat2 18s ease-in-out infinite;
+    }
+    body.dark .blob-1 { background: radial-gradient(circle, rgba(56,189,248,0.35) 0%, transparent 70%); }
+    body.dark .blob-2 { background: radial-gradient(circle, rgba(99,102,241,0.28) 0%, transparent 70%); }
+
+    @keyframes blobFloat1 {
+      0%,100%{transform:translate(0,0) scale(1);}
+      33%{transform:translate(-30px,20px) scale(1.05);}
+      66%{transform:translate(20px,-30px) scale(0.97);}
+    }
+    @keyframes blobFloat2 {
+      0%,100%{transform:translate(0,0) scale(1);}
+      50%{transform:translate(40px,-20px) scale(1.08);}
+    }
+
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: clamp(32px, 5vw, 64px);
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media(max-width: 960px){
+      .hero-inner {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        text-align: center;
+      }
+      .hero-visual { order: 2; width: 100%; }
+      .hero-copy { order: 1; display: flex; flex-direction: column; align-items: center; }
+      .hero-sub { margin-left: auto; margin-right: auto; }
+      .hero-ctas { justify-content: center; }
+      .hero-social-proof { justify-content: center; }
+    }
+
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
+      color: var(--color-safe-text); background-color: var(--color-safe-bg);
+      border: 1px solid var(--color-safe-border); border-radius: 100px;
+      padding: 4px 12px; margin-bottom: 20px; letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .hero-tag .material-symbols-outlined { font-size: 14px; }
+
+    .hero-headline {
+      font-size: clamp(2.1rem, 5.2vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--color-on-background);
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+
+    .accent-safe { color: var(--color-safe); }
+    .accent { color: var(--color-primary); }
+    body.dark .accent { color: #38bdf8; }
+
+    .hero-sub {
+      font-size: clamp(0.95rem, 2vw, 1.05rem);
+      line-height: 1.65;
+      color: var(--color-on-surface-variant);
+      margin-bottom: 32px;
+      max-width: 520px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+      width: 100%;
+    }
+
+    .btn-hero-primary {
+      font-size: 0.95rem;
+      padding: 13px 26px;
+      border-radius: 12px;
+    }
+
+    .btn-hero-secondary {
+      font-size: 0.95rem;
+      padding: 12px 24px;
+      border-radius: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .hero-ctas { flex-direction: column; width: 100%; }
+      .hero-ctas .btn { width: 100%; }
+    }
+
+    .hero-social-proof {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.82rem; color: var(--color-on-surface-variant);
+      flex-wrap: wrap;
+    }
+    .proof-dots { display: flex; flex-shrink: 0; }
+    .proof-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--color-surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; margin-left: -8px; color: #fff;
+    }
+    .proof-dot:first-child { margin-left: 0; }
+    .pd-1{background:#4f46e5;} .pd-2{background:#9333ea;}
+    .pd-3{background:#16a34a;} .pd-4{background:#0f172a;}
+
+    /* ── Hero Mockup Card (Fully contained, no overflow chips) ── */
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      width: 100%;
+    }
+
+    .mockup-card {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-outline-variant);
+      border-radius: 20px;
+      padding: clamp(20px, 4vw, 28px);
+      box-shadow: var(--shadow-modal);
+      width: 100%;
+      max-width: 340px;
+      position: relative;
+      transition: background-color 0.3s ease;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+
+    .mockup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .mockup-title { font-weight: 700; font-size: 0.95rem; color: var(--color-on-background); }
+    .mockup-subtitle { font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-on-surface-variant); margin-top: 2px; }
+
+    .live-dot-indicator {
+      display: flex; align-items: center; gap: 5px;
+      font-family: var(--font-mono); font-size: 0.65rem;
+      color: var(--color-safe); font-weight: 600;
+      background: var(--color-safe-bg);
+      padding: 3px 8px;
+      border-radius: 100px;
+      border: 1px solid var(--color-safe-border);
+    }
+    .live-dot-pulse {
+      width: 6px; height: 6px; border-radius: 50%;
+      background-color: var(--color-safe); animation: pulseDot 2s ease-in-out infinite;
+    }
+    @keyframes pulseDot {
+      0%,100%{opacity:1;transform:scale(1);}
+      50%{opacity:0.4;transform:scale(0.8);}
+    }
+
+    .ring-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+    .ring-wrapper { position: relative; width: 130px; height: 130px; }
+    .ring-svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: var(--color-surface-container); stroke-width: 10; }
+    .ring-fill {
+      fill: none; stroke: var(--color-safe); stroke-width: 10;
+      stroke-linecap: round; stroke-dasharray: 376.99; stroke-dashoffset: 376.99;
+    }
+    .ring-fill.warning { stroke: var(--color-warning); }
+    .ring-fill.critical { stroke: var(--color-critical); }
+
+    .ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .ring-pct {
+      font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700;
+      color: var(--color-on-background); line-height: 1;
+    }
+    .ring-label { font-size: 0.65rem; color: var(--color-on-surface-variant); font-weight: 500; margin-top: 3px; text-align: center; }
+    .ring-meta {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--color-safe-text); background-color: var(--color-safe-bg);
+      border: 1px solid var(--color-safe-border); border-radius: 6px;
+      padding: 4px 10px; margin-top: 10px;
+    }
+
+    .mockup-subjects { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .mockup-subject-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 12px; border-radius: 10px;
+      background-color: var(--color-surface-container-low);
+      border: 1px solid var(--color-outline-variant);
+    }
+    .ms-name { font-size: 0.8rem; font-weight: 600; color: var(--color-on-background); }
+    .ms-sub { font-family: var(--font-mono); font-size: 0.65rem; color: var(--color-on-surface-variant); margin-top: 1px; }
+    .ms-badge { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+    .ms-safe { color: var(--color-safe-text); background-color: var(--color-safe-bg); border: 1px solid var(--color-safe-border); }
+    .ms-warn { color: #92400e; background-color: var(--color-warning-bg); border: 1px solid var(--color-warning-border); }
+    body.dark .ms-warn { color: #fcd34d; }
+
+    /* =========================================================  TRUST STRIP  */
+    #trust-strip {
+      background-color: var(--color-surface);
+      border-top: 1px solid var(--color-outline-variant);
+      border-bottom: 1px solid var(--color-outline-variant);
+      padding: clamp(32px, 5vw, 48px) clamp(16px, 5vw, 60px);
+      transition: background-color 0.3s ease;
+      width: 100%;
+    }
+    .trust-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center;
+    }
+    @media(max-width: 768px){ .trust-inner { grid-template-columns: repeat(2, 1fr); gap: 20px; } }
+    @media(max-width: 380px){ .trust-inner { grid-template-columns: 1fr; gap: 16px; } }
+    
+    .trust-value {
+      font-family: var(--font-mono);
+      font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 700;
+      color: var(--color-on-background); line-height: 1; margin-bottom: 6px;
+    }
+    .trust-label { font-size: 0.82rem; color: var(--color-on-surface-variant); line-height: 1.4; font-weight: 500; }
+
+    /* =========================================================  SECTION SHARED  */
+    .section-header { text-align: center; max-width: 680px; margin: 0 auto clamp(40px, 6vw, 64px); padding: 0 16px; }
+    .section-label {
+      font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--color-secondary); margin-bottom: 12px;
+    }
+    body.dark .section-label { color: #38bdf8; }
+    .section-title {
+      font-size: clamp(1.7rem, 3.8vw, 2.5rem); font-weight: 800;
+      letter-spacing: -0.02em; line-height: 1.18;
+      color: var(--color-on-background); margin-bottom: 14px;
+      word-break: break-word;
+    }
+    .section-sub { font-size: clamp(0.9rem, 1.8vw, 1rem); color: var(--color-on-surface-variant); line-height: 1.65; }
+
+    /* =========================================================  FEATURES  */
+    #features { padding: clamp(60px, 10vw, 96px) clamp(16px, 5vw, 60px); width: 100%; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: clamp(16px, 3vw, 24px);
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .feature-card {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-outline-variant);
+      border-radius: 16px;
+      padding: clamp(20px, 3vw, 28px);
+      box-shadow: var(--shadow-card);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card-hover); border-color: var(--color-outline); }
+
+    .feature-icon-wrap {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 18px;
+    }
+    .feature-icon-wrap .material-symbols-outlined { font-size: 24px; }
+
+    .fi-blue{background:#e0e7ff;color:#4f46e5;} .fi-purple{background:#f3e8ff;color:#9333ea;}
+    .fi-green{background:#dcfce7;color:#16a34a;} .fi-amber{background:#fef3c7;color:#d97706;}
+    .fi-red{background:#ffe4e6;color:#e11d48;} .fi-slate{background:#f1f5f9;color:#475569;}
+
+    body.dark .fi-blue{background:rgba(79,70,229,0.2);color:#818cf8;}
+    body.dark .fi-purple{background:rgba(147,51,234,0.2);color:#c084fc;}
+    body.dark .fi-green{background:rgba(22,163,74,0.2);color:#4ade80;}
+    body.dark .fi-amber{background:rgba(217,119,6,0.2);color:#fbbf24;}
+    body.dark .fi-red{background:rgba(225,29,72,0.2);color:#fb7185;}
+    body.dark .fi-slate{background:rgba(71,85,105,0.2);color:#94a3b8;}
+
+    .feature-name { font-size: 1.05rem; font-weight: 700; color: var(--color-on-background); margin-bottom: 8px; letter-spacing: -0.01em; }
+    .feature-desc { font-size: 0.875rem; color: var(--color-on-surface-variant); line-height: 1.6; }
+
+    /* =========================================================  HOW IT WORKS  */
+    #how-it-works {
+      background-color: var(--color-surface-container-low);
+      padding: clamp(60px, 10vw, 96px) clamp(16px, 5vw, 60px);
+      border-top: 1px solid var(--color-outline-variant);
+      border-bottom: 1px solid var(--color-outline-variant);
+      transition: background-color 0.3s ease;
+      width: 100%;
+    }
+
+    .steps-container {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: start;
+      gap: 16px;
+      width: 100%;
+    }
+    @media(max-width: 800px){
+      .steps-container { grid-template-columns: 1fr; gap: 24px; }
+      .step-connector { display: none; }
+    }
+
+    .step-card {
+      text-align: center;
+      padding: clamp(20px, 3vw, 32px) 16px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-outline-variant);
+      border-radius: 16px;
+    }
+    .step-num-wrap {
+      width: 52px; height: 52px; border-radius: 14px;
+      background-color: var(--color-primary); color: var(--color-on-primary);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem;
+    }
+    body.dark .step-num-wrap { background-color: #38bdf8; color: #0f172a; }
+    .step-title { font-size: 1rem; font-weight: 700; color: var(--color-on-background); margin-bottom: 8px; }
+    .step-desc { font-size: 0.85rem; color: var(--color-on-surface-variant); line-height: 1.6; }
+
+    .step-connector { display: flex; align-items: center; justify-content: center; padding-top: 44px; }
+    .connector-line {
+      width: 50px; height: 2px;
+      background: linear-gradient(to right, var(--color-primary), var(--color-safe));
+      border-radius: 1px; transform: scaleX(0); transform-origin: left;
+    }
+    body.dark .connector-line { background: linear-gradient(to right, #38bdf8, #34d399); }
+
+    /* =========================================================  PRODUCT PREVIEW  */
+    #product-preview {
+      padding: clamp(60px, 10vw, 96px) clamp(16px, 5vw, 60px);
+      display: flex; flex-direction: column; align-items: center; overflow: hidden;
+      width: 100%;
+    }
+
+    .browser-chrome {
+      width: 100%; max-width: 960px;
+      background-color: var(--color-surface-container);
+      border: 1px solid var(--color-outline-variant);
+      border-radius: 16px; box-shadow: var(--shadow-modal);
+      overflow: hidden; transition: background-color 0.3s ease;
+      box-sizing: border-box;
+    }
+    .browser-bar {
+      display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+      background-color: var(--color-surface);
+      border-bottom: 1px solid var(--color-outline-variant);
+    }
+    .browser-dots { display: flex; gap: 6px; }
+    .b-dot { width: 11px; height: 11px; border-radius: 50%; }
+    .b-dot-r{background:#fc5f57;} .b-dot-y{background:#febc2e;} .b-dot-g{background:#28c840;}
+    .browser-url {
+      flex: 1; background-color: var(--color-surface-container-low);
+      border-radius: 6px; padding: 4px 12px;
+      font-family: var(--font-mono); font-size: 0.72rem; color: var(--color-on-surface-variant);
+      border: 1px solid var(--color-outline-variant);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .browser-body { display: flex; min-height: 380px; }
+
+    .browser-sidebar {
+      width: 190px; background-color: var(--color-surface-container);
+      border-right: 1px solid var(--color-outline-variant);
+      padding: 20px 12px; flex-shrink: 0; transition: background-color 0.3s ease;
+    }
+    .bs-brand { display: flex; align-items: center; gap: 8px; padding: 0 6px; margin-bottom: 20px; }
+    .bs-badge {
+      width: 26px; height: 26px; border-radius: 7px;
+      background-color: var(--color-primary);
+      display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0;
+    }
+    body.dark .bs-badge { background-color: #38bdf8; color: #0f172a; }
+    .bs-badge .material-symbols-outlined { font-size: 14px; }
+    .bs-name { font-size: 0.8rem; font-weight: 700; color: var(--color-on-background); }
+
+    .bs-nav-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+      border-radius: 8px; font-size: 0.75rem; font-weight: 500;
+      color: var(--color-on-surface-variant); margin-bottom: 2px;
+    }
+    .bs-nav-item.active {
+      background-color: var(--color-secondary-container);
+      color: var(--color-on-secondary-container); font-weight: 600;
+    }
+    body.dark .bs-nav-item.active { background-color: rgba(56,189,248,0.15); color: #38bdf8; }
+    .bs-nav-item .material-symbols-outlined { font-size: 16px; }
+
+    .browser-main {
+      flex: 1; background-color: var(--color-background);
+      padding: clamp(14px, 3vw, 20px); overflow: hidden; transition: background-color 0.3s ease;
+    }
+    .bm-header { font-size: 0.88rem; font-weight: 700; color: var(--color-on-background); margin-bottom: 14px; }
+    .bm-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .bm-stat-card {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-outline-variant);
+      border-radius: 10px; padding: 12px; transition: background-color 0.3s ease;
+    }
+    .bms-label { font-size: 0.65rem; color: var(--color-on-surface-variant); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .bms-value { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--color-on-background); }
+    .bms-value.green { color: var(--color-safe); }
+    .bms-value.amber { color: var(--color-warning); }
+
+    .bm-subjects { display: flex; flex-direction: column; gap: 8px; }
+    .bm-subject-row {
+      display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px;
+      background-color: var(--color-surface); border: 1px solid var(--color-outline-variant);
+      border-radius: 8px; padding: 9px 12px; transition: background-color 0.3s ease;
+    }
+    .bsr-name { font-size: 0.76rem; font-weight: 600; color: var(--color-on-background); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bsr-type { font-size: 0.62rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; font-family: var(--font-mono); }
+    .bsr-theory{background:var(--theory-bg);color:var(--theory-text);border:1px solid var(--theory-border);}
+    .bsr-lab{background:var(--lab-bg);color:var(--lab-text);border:1px solid var(--lab-border);}
+    .bsr-tut{background:var(--tutorial-bg);color:var(--tutorial-text);border:1px solid var(--tutorial-border);}
+    .bsr-pct { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; }
+    .bsr-pct.safe{color:var(--color-safe);} .bsr-pct.warn{color:var(--color-warning);} .bsr-pct.crit{color:var(--color-critical);}
+
+    @media(max-width: 640px){
+      .browser-sidebar { display: none; }
+      .browser-body { min-height: 280px; }
+      .bm-cards { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* =========================================================  FAQ  */
+    #faq {
+      background-color: var(--color-surface-container-low);
+      padding: clamp(60px, 10vw, 96px) clamp(16px, 5vw, 60px);
+      border-top: 1px solid var(--color-outline-variant);
+      transition: background-color 0.3s ease;
+      width: 100%;
+    }
+    .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; width: 100%; }
+    .faq-item { border-bottom: 1px solid var(--color-outline-variant); }
+    .faq-item:first-child { border-top: 1px solid var(--color-outline-variant); }
+
+    .faq-question {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 18px 0; background: none; border: none; cursor: pointer;
+      text-align: left; font-family: var(--font-primary); font-size: clamp(0.9rem, 2vw, 0.98rem);
+      font-weight: 600; color: var(--color-on-background); transition: color 0.15s ease;
+    }
+    .faq-question:hover { color: var(--color-primary); }
+    body.dark .faq-question:hover { color: #38bdf8; }
+
+    .faq-chevron { flex-shrink: 0; color: var(--color-on-surface-variant); transition: transform 0.25s ease; }
+    .faq-chevron .material-symbols-outlined { font-size: 20px; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1); }
+    .faq-item.open .faq-answer { max-height: 260px; }
+    .faq-answer-inner { padding-bottom: 18px; font-size: 0.88rem; color: var(--color-on-surface-variant); line-height: 1.65; }
+
+    /* =========================================================  FINAL CTA  */
+    #cta-band {
+      background-color: #0f172a; padding: clamp(60px, 8vw, 88px) clamp(16px, 5vw, 60px);
+      text-align: center; position: relative; overflow: hidden;
+      width: 100%;
+    }
+    body.dark #cta-band { background-color: #060b14; border-top: 1px solid #1e293b; }
+
+    .cta-bg-grid {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 28px 28px; pointer-events: none;
+    }
+    .cta-glow {
+      position: absolute; width: 500px; height: 260px;
+      background: radial-gradient(ellipse, rgba(56,189,248,0.14) 0%, transparent 60%);
+      top: 50%; left: 50%; transform: translate(-50%,-50%); pointer-events: none;
+    }
+    .cta-inner { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; width: 100%; padding: 0 12px; }
+    .cta-title { font-size: clamp(1.7rem, 4vw, 2.7rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.18; color: #fff; margin-bottom: 16px; }
+    .cta-title .accent-cta { color: #38bdf8; }
+    .cta-sub { font-size: clamp(0.9rem, 2vw, 1rem); color: #94a3b8; margin-bottom: 32px; line-height: 1.65; }
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    .btn-cta-primary {
+      background-color: #38bdf8; color: #0f172a;
+      padding: 13px 28px; border-radius: 12px; font-size: 0.95rem;
+      box-shadow: 0 4px 20px rgba(56,189,248,0.35);
+    }
+    .btn-cta-primary:hover { box-shadow: 0 6px 28px rgba(56,189,248,0.5); }
+    .btn-cta-ghost {
+      background-color: transparent; color: #cbd5e1; border: 1.5px solid #334155;
+      padding: 12px 28px; border-radius: 12px; font-size: 0.95rem;
+    }
+    .btn-cta-ghost:hover { border-color: #64748b; color: #fff; background-color: rgba(255,255,255,0.05); }
+
+    @media (max-width: 480px) {
+      .cta-btns { flex-direction: column; width: 100%; }
+      .cta-btns .btn { width: 100%; }
+    }
+
+    /* =========================================================  FOOTER  */
+    #footer {
+      background-color: #0f172a; border-top: 1px solid #1e293b;
+      padding: clamp(32px, 5vw, 44px) clamp(16px, 5vw, 60px);
+      width: 100%;
+    }
+    body.dark #footer { background-color: #060b14; }
+    .footer-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    }
+    @media (max-width: 680px) {
+      .footer-inner { flex-direction: column; text-align: center; gap: 16px; }
+      .footer-brand { justify-content: center; }
+      .footer-links { justify-content: center; }
+    }
+
+    .footer-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .footer-badge {
+      width: 32px; height: 32px; border-radius: 9px;
+      background-color: #1e293b; border: 1px solid #334155;
+      display: flex; align-items: center; justify-content: center; color: #38bdf8;
+    }
+    .footer-badge .material-symbols-outlined { font-size: 17px; }
+    .footer-name { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; }
+    .footer-tagline { font-size: 0.78rem; color: #64748b; margin-top: 1px; }
+    .footer-links { display: flex; gap: 20px; list-style: none; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.82rem; color: #64748b; text-decoration: none; transition: color 0.15s ease; }
+    .footer-links a:hover { color: #94a3b8; }
+    .footer-copy { font-size: 0.78rem; color: #475569; }
+
+    /* =========================================================  REVEAL STATES  */
+    .js-reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .js-reveal.visible { opacity: 1; transform: none; }
+
+    /* =========================================================  REDUCED MOTION  */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      .js-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .connector-line { transform: scaleX(1) !important; }
+    }
+
+    section { position: relative; }
+    @media(max-width:560px) { .hidden-sm { display: none !important; } }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==========================================
+       STICKY NAV
+       ========================================== -->
+  <nav id="landing-nav" role="navigation" aria-label="Main navigation">
+    <a href="landing.html" class="nav-logo" id="nav-logo" aria-label="ClassTrack home">
+      <div class="nav-logo-badge">
+        <span class="material-symbols-outlined">school</span>
+      </div>
+      <span class="nav-logo-text">ClassTrack</span>
+    </a>
+
+    <ul class="nav-links" role="list">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How it Works</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="btn-icon" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle light/dark mode">
+        <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+      </button>
+      <!-- "Sign In" CTA redirects to login -->
+      <a href="login.html" class="btn btn-ghost hidden-sm" id="nav-login-btn">Sign In</a>
+      <!-- "Get Started" CTA redirects to signup -->
+      <a href="signup.html" class="btn btn-primary" id="nav-signup-btn">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- ==========================================
+       HERO
+       ========================================== -->
+  <section id="hero" aria-label="Hero section">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="dot-grid"></div>
+      <div class="hero-blob blob-1"></div>
+      <div class="hero-blob blob-2"></div>
+    </div>
+
+    <div class="hero-inner">
+      <!-- Copy -->
+      <div class="hero-copy" id="hero-copy">
+        <div class="hero-tag" id="hero-tag">
+          <span class="material-symbols-outlined">verified</span>
+          Built for Engineering Students
+        </div>
+
+        <h1 class="hero-headline" id="hero-headline">
+          <span class="fold-text" data-hinge="top">Never miss the</span><br>
+          <span class="fold-text accent-safe" data-hinge="top">75% cutoff</span><br>
+          <span class="fold-text accent" data-hinge="top">again.</span>
+        </h1>
+
+        <p class="hero-sub" id="hero-sub">
+          ClassTrack tracks each session of every subject — including multiple lectures on the same day — as independent attendance events. Backed by real-time cloud synchronization for full device freedom.
+        </p>
+
+        <div class="hero-ctas" id="hero-ctas">
+          <!-- "Get Started Free" CTA -> signup -->
+          <a href="signup.html" class="btn btn-primary btn-hero-primary" id="hero-cta-1">
+            <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+            Get Started Free
+          </a>
+          <!-- "Sign In to Account" CTA -> login -->
+          <a href="login.html" class="btn btn-ghost btn-hero-secondary" id="hero-cta-2">
+            Sign In to Account
+          </a>
+        </div>
+
+        <div class="hero-social-proof" id="hero-proof">
+          <div class="proof-dots" aria-hidden="true">
+            <div class="proof-dot pd-1">A</div>
+            <div class="proof-dot pd-2">R</div>
+            <div class="proof-dot pd-3">S</div>
+            <div class="proof-dot pd-4">V</div>
+          </div>
+          <span>Used by engineering students — real-time cloud sync across all devices.</span>
+        </div>
+      </div>
+
+      <!-- Dashboard Mockup (Clean, responsive, contained card) -->
+      <div class="hero-visual" id="hero-visual" aria-label="Dashboard preview" role="img">
+        <div class="mockup-card" role="presentation">
+          <div class="mockup-header">
+            <div>
+              <div class="mockup-title">Attendance Overview</div>
+              <div class="mockup-subtitle">Semester 5 — Aug 2026</div>
+            </div>
+            <div class="live-dot-indicator">
+              <div class="live-dot-pulse"></div>
+              LIVE
+            </div>
+          </div>
+
+          <!-- Animated Ring -->
+          <div class="ring-container">
+            <div class="ring-wrapper" aria-label="Overall attendance 82%">
+              <svg class="ring-svg" viewBox="0 0 140 140" aria-hidden="true">
+                <circle class="ring-track" cx="70" cy="70" r="60"/>
+                <circle class="ring-fill" cx="70" cy="70" r="60" id="hero-ring"/>
+              </svg>
+              <div class="ring-center">
+                <div class="ring-pct" id="ring-pct-display">0%</div>
+                <div class="ring-label">Overall<br>Attendance</div>
+              </div>
+            </div>
+            <div class="ring-meta">&#10003; Above 75% threshold</div>
+          </div>
+
+          <!-- Subjects -->
+          <div class="mockup-subjects" role="list">
+            <div class="mockup-subject-row" role="listitem">
+              <div><div class="ms-name">Physics</div><div class="ms-sub">Theory + Lab</div></div>
+              <div class="ms-badge ms-safe">88%</div>
+            </div>
+            <div class="mockup-subject-row" role="listitem">
+              <div><div class="ms-name">Mathematics</div><div class="ms-sub">Theory</div></div>
+              <div class="ms-badge ms-warn">76%</div>
+            </div>
+            <div class="mockup-subject-row" role="listitem">
+              <div><div class="ms-name">Data Structures</div><div class="ms-sub">Theory + Tutorial</div></div>
+              <div class="ms-badge ms-safe">91%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       TRUST STRIP
+       ========================================== -->
+  <div id="trust-strip" role="region" aria-label="Key stats">
+    <div class="trust-inner">
+      <div class="trust-item">
+        <div class="trust-value" data-target="75" data-suffix="%">0%</div>
+        <div class="trust-label">Attendance rule built-in<br>as the default threshold</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-value" data-target="inf" data-suffix="">&#8734;</div>
+        <div class="trust-label">Sessions per subject<br>per day — no limits</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-value" data-target="100" data-suffix="%">0%</div>
+        <div class="trust-label">Real-time Cloud Sync<br>Instant Cross-Device Access</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-value" data-target="0" data-suffix=" loss">0 loss</div>
+        <div class="trust-label">Encrypted User Isolation<br>&amp; Data Security</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       FEATURES
+       ========================================== -->
+  <section id="features" aria-labelledby="features-title">
+    <div class="section-header">
+      <div class="section-label">What ClassTrack does</div>
+      <h2 class="section-title" id="features-title">
+        <span class="fold-text" data-hinge="top">Everything you need,</span><br>
+        <span class="fold-text" data-hinge="bottom">nothing you don't.</span>
+      </h2>
+      <p class="section-sub">Built around the exact pain points of engineering attendance — not generic task management.</p>
+    </div>
+
+    <div class="features-grid" role="list">
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon-wrap fi-blue">
+          <span class="material-symbols-outlined">event_repeat</span>
+        </div>
+        <div class="feature-name">Per-Session Tracking</div>
+        <p class="feature-desc">Log each occurrence of a subject independently. Two Physics lectures on the same day count as two separate attendance events, not one.</p>
+      </div>
+
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon-wrap fi-purple">
+          <span class="material-symbols-outlined">calendar_month</span>
+        </div>
+        <div class="feature-name">Smart Weekly Schedule</div>
+        <p class="feature-desc">Visual timetable with color-coded theory, lab, and tutorial slots. See your entire week at a glance and know exactly what's coming.</p>
+      </div>
+
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon-wrap fi-green">
+          <span class="material-symbols-outlined">analytics</span>
+        </div>
+        <div class="feature-name">Live Attendance Analytics</div>
+        <p class="feature-desc">Subject-wise breakdown, type-wise stats (theory vs lab vs tutorial), and a live overall aggregate — everything in real time.</p>
+      </div>
+
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon-wrap fi-red">
+          <span class="material-symbols-outlined">how_to_reg</span>
+        </div>
+        <div class="feature-name">Quick Mark Attendance</div>
+        <p class="feature-desc">One-tap Present / Absent / Cancelled logging from anywhere. A prominent button always at the top — never more than a second away.</p>
+      </div>
+
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon-wrap fi-slate">
+          <span class="material-symbols-outlined">cloud_done</span>
+        </div>
+        <div class="feature-name">Cloud Database Sync</div>
+        <p class="feature-desc">Instant PostgreSQL database persistence with secure Row Level Security. Seamless multi-device sync and automatic real-time backups.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       HOW IT WORKS
+       ========================================== -->
+  <section id="how-it-works" aria-labelledby="how-title">
+    <div class="section-header">
+      <div class="section-label">Simple by design</div>
+      <h2 class="section-title" id="how-title">
+        <span class="fold-text" data-hinge="top">Up and running</span><br>
+        <span class="fold-text" data-hinge="bottom">in three steps.</span>
+      </h2>
+      <p class="section-sub">No onboarding tutorial needed. You'll figure it out in under a minute.</p>
+    </div>
+
+    <div class="steps-container" role="list">
+      <div class="step-card" role="listitem">
+        <div class="step-num-wrap" aria-hidden="true">01</div>
+        <div class="step-title">Add Subjects &amp; Schedule</div>
+        <p class="step-desc">Enter your subjects with attendance thresholds, then map out your weekly timetable — theory, lab, and tutorial slots included.</p>
+      </div>
+
+      <div class="step-connector" aria-hidden="true">
+        <div class="connector-line" id="connector-1"></div>
+      </div>
+
+      <div class="step-card" role="listitem">
+        <div class="step-num-wrap" aria-hidden="true">02</div>
+        <div class="step-title">Mark Attendance Daily</div>
+        <p class="step-desc">Each session auto-appears from your schedule. Tap Present, Absent, or Cancelled. Takes five seconds per class, max.</p>
+      </div>
+
+      <div class="step-connector" aria-hidden="true">
+        <div class="connector-line" id="connector-2"></div>
+      </div>
+
+      <div class="step-card" role="listitem">
+        <div class="step-num-wrap" aria-hidden="true">03</div>
+        <div class="step-title">Monitor Your Analytics</div>
+        <p class="step-desc">The Analytics view shows subject-wise attendance percentages, trends, and real-time alerts when you're approaching the minimum cutoff.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       PRODUCT PREVIEW
+       ========================================== -->
+  <section id="product-preview" aria-labelledby="preview-title">
+    <div class="section-header">
+      <div class="section-label">See it in action</div>
+      <h2 class="section-title" id="preview-title">
+        <span class="fold-text" data-hinge="top">The dashboard that</span><br>
+        <span class="fold-text" data-hinge="bottom">keeps you in control.</span>
+      </h2>
+      <p class="section-sub">A clean, data-dense interface that doesn't get in your way.</p>
+    </div>
+
+    <div class="browser-chrome" id="browser-mockup" role="img" aria-label="ClassTrack dashboard mockup">
+      <div class="browser-bar" aria-hidden="true">
+        <div class="browser-dots">
+          <div class="b-dot b-dot-r"></div>
+          <div class="b-dot b-dot-y"></div>
+          <div class="b-dot b-dot-g"></div>
+        </div>
+        <div class="browser-url">classtrack.app/dashboard</div>
+      </div>
+
+      <div class="browser-body">
+        <!-- Sidebar -->
+        <div class="browser-sidebar" aria-hidden="true">
+          <div class="bs-brand">
+            <div class="bs-badge"><span class="material-symbols-outlined">school</span></div>
+            <span class="bs-name">ClassTrack</span>
+          </div>
+          <div class="bs-nav-item active"><span class="material-symbols-outlined">dashboard</span>Dashboard</div>
+          <div class="bs-nav-item"><span class="material-symbols-outlined">menu_book</span>Subjects</div>
+          <div class="bs-nav-item"><span class="material-symbols-outlined">calendar_month</span>Schedule</div>
+          <div class="bs-nav-item"><span class="material-symbols-outlined">analytics</span>Analytics</div>
+          <div class="bs-nav-item"><span class="material-symbols-outlined">person</span>Profile</div>
+        </div>
+
+        <!-- Main -->
+        <div class="browser-main" aria-hidden="true">
+          <div class="bm-header">Overview — Semester 5</div>
+          <div class="bm-cards">
+            <div class="bm-stat-card">
+              <div class="bms-label">Overall</div>
+              <div class="bms-value green">82.4%</div>
+            </div>
+            <div class="bm-stat-card">
+              <div class="bms-label">Target Met</div>
+              <div class="bms-value green">&#10003; Safe</div>
+            </div>
+            <div class="bm-stat-card">
+              <div class="bms-label">At Risk</div>
+              <div class="bms-value amber">1 subject</div>
+            </div>
+          </div>
+          <div class="bm-subjects">
+            <div class="bm-subject-row">
+              <span class="bsr-name">Engineering Physics</span>
+              <span class="bsr-type bsr-theory">Theory</span>
+              <span class="bsr-pct safe">88%</span>
+            </div>
+            <div class="bm-subject-row">
+              <span class="bsr-name">Physics Lab</span>
+              <span class="bsr-type bsr-lab">Lab</span>
+              <span class="bsr-pct safe">85%</span>
+            </div>
+            <div class="bm-subject-row">
+              <span class="bsr-name">Mathematics IV</span>
+              <span class="bsr-type bsr-theory">Theory</span>
+              <span class="bsr-pct warn">76%</span>
+            </div>
+            <div class="bm-subject-row">
+              <span class="bsr-name">DS &amp; Algorithms</span>
+              <span class="bsr-type bsr-tut">Tutorial</span>
+              <span class="bsr-pct safe">91%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FAQ
+       ========================================== -->
+  <section id="faq" aria-labelledby="faq-title">
+    <div class="section-header">
+      <div class="section-label">Got questions?</div>
+      <h2 class="section-title" id="faq-title">
+        <span class="fold-text" data-hinge="top">We've got answers.</span>
+      </h2>
+    </div>
+
+    <div class="faq-list" role="list">
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" aria-controls="faq-a1">
+          How is my data stored and synchronized?
+          <span class="faq-chevron" aria-hidden="true"><span class="material-symbols-outlined">expand_more</span></span>
+        </button>
+        <div class="faq-answer" id="faq-a1">
+          <div class="faq-answer-inner">When you create an account and sign in, all your courses, schedule timetable slots, and attendance logs are securely saved in a private PostgreSQL cloud database with Row Level Security. Your data automatically syncs across all your devices in real time.</div>
+        </div>
+      </div>
+
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" aria-controls="faq-a2">
+          Is my academic data secure and private?
+          <span class="faq-chevron" aria-hidden="true"><span class="material-symbols-outlined">expand_more</span></span>
+        </button>
+        <div class="faq-answer" id="faq-a2">
+          <div class="faq-answer-inner">Yes! All database records are strictly isolated by your user ID using PostgreSQL Row Level Security (RLS) policies. Only you can read, insert, update, or delete your academic records.</div>
+        </div>
+      </div>
+
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" aria-controls="faq-a3">
+          Can I track two classes of the same subject in one day?
+          <span class="faq-chevron" aria-hidden="true"><span class="material-symbols-outlined">expand_more</span></span>
+        </button>
+        <div class="faq-answer" id="faq-a3">
+          <div class="faq-answer-inner">Yes — this is the core feature that makes ClassTrack different. Each timetable slot (e.g., Physics 9:00 AM and Physics Lab 2:00 PM) is tracked as an independent attendance event. Both count separately toward your subject total.</div>
+        </div>
+      </div>
+
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" aria-controls="faq-a4">
+          Can I change the attendance threshold from 75%?
+          <span class="faq-chevron" aria-hidden="true"><span class="material-symbols-outlined">expand_more</span></span>
+        </button>
+        <div class="faq-answer" id="faq-a4">
+          <div class="faq-answer-inner">Yes. The default is 75% (the most common engineering cutoff), but you can set a custom threshold per subject or globally in Profile/Settings. Some colleges require 80% or 85% — ClassTrack handles all of them.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FINAL CTA BAND
+       ========================================== -->
+  <section id="cta-band" aria-labelledby="cta-title">
+    <div class="cta-bg-grid" aria-hidden="true"></div>
+    <div class="cta-glow" aria-hidden="true"></div>
+    <div class="cta-inner">
+      <h2 class="cta-title" id="cta-title">
+        <span class="fold-text" data-hinge="top">Start tracking your attendance</span><br>
+        <span class="fold-text accent-cta" data-hinge="bottom">in seconds.</span>
+      </h2>
+      <p class="cta-sub">Secure real-time cloud database sync.<br>Access your schedule anywhere, anytime.</p>
+      <div class="cta-btns">
+        <a href="signup.html" class="btn btn-cta-primary" id="cta-signup-btn">
+          <span class="material-symbols-outlined" style="font-size:18px">arrow_forward</span>
+          Create Free Account
+        </a>
+        <a href="login.html" class="btn btn-cta-ghost" id="cta-login-btn">
+          Sign In
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FOOTER
+       ========================================== -->
+  <footer id="footer" role="contentinfo">
+    <div class="footer-inner">
+      <a href="landing.html" class="footer-brand" aria-label="ClassTrack home">
+        <div class="footer-badge"><span class="material-symbols-outlined">school</span></div>
+        <div>
+          <div class="footer-name">ClassTrack</div>
+          <div class="footer-tagline">Student Attendance Tracker</div>
+        </div>
+      </a>
+      <ul class="footer-links" role="list">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How it Works</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="login.html">Sign In</a></li>
+      </ul>
+      <p class="footer-copy">Built by students, for students. &copy; 2026 ClassTrack.</p>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       JAVASCRIPT
+       ========================================== -->
+  <script>
+    /* ── Theme Toggle ──────────────────────────────────────── */
+    const body = document.body;
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+
+    const savedTheme = localStorage.getItem('ct-landing-theme');
+    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      body.classList.add('dark');
+      themeIcon.textContent = 'light_mode';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      const isDark = body.classList.toggle('dark');
+      themeIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
+      localStorage.setItem('ct-landing-theme', isDark ? 'dark' : 'light');
+    });
+
+    /* ── Nav scroll effect ──────────────────────────────────── */
+    const nav = document.getElementById('landing-nav');
+    const updateNavScroll = () => {
+      if (nav) nav.classList.toggle('scrolled', window.scrollY > 30);
+    };
+    window.addEventListener('scroll', updateNavScroll, { passive: true });
+    updateNavScroll();
+
+    /* ── Reduced motion check ───────────────────────────────── */
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ── Fold Text Animator & Initializer ───────────────────── */
+    function initFoldText() {
+      const foldElements = document.querySelectorAll('.fold-text');
+      
+      foldElements.forEach((el) => {
+        const text = el.textContent.trim();
+        const hinge = el.dataset.hinge || 'top';
+        el.innerHTML = '';
+
+        // Screen reader accessible version
+        const srOnly = document.createElement('span');
+        srOnly.className = 'fold-text-sr-only';
+        srOnly.textContent = text;
+        el.appendChild(srOnly);
+
+        // Visual 3D fold container
+        const visual = document.createElement('span');
+        visual.className = 'fold-text-visual';
+        visual.setAttribute('aria-hidden', 'true');
+
+        // Split text by words and preserve whitespace
+        const tokens = text.split(/(\s+)/);
+        tokens.forEach((token) => {
+          if (/^\s+$/.test(token)) {
+            const ws = document.createElement('span');
+            ws.className = 'fold-text-whitespace';
+            ws.textContent = token;
+            visual.appendChild(ws);
+          } else if (token.length > 0) {
+            const segment = document.createElement('span');
+            segment.className = 'fold-text-segment';
+            segment.setAttribute('data-fold-split', 'word');
+
+            const piece = document.createElement('span');
+            piece.className = 'fold-text-piece' + (!reduced ? ' is-folded' : ' is-unfolded');
+            piece.setAttribute('data-fold-hinge', hinge);
+            piece.textContent = token;
+
+            segment.appendChild(piece);
+            visual.appendChild(segment);
+          }
+        });
+
+        el.appendChild(visual);
+      });
+
+      // Animate fold text elements on scroll
+      if (!reduced) {
+        // Hero heading fold text unfolds smoothly on page load with clear pacing
+        const heroPieces = document.querySelectorAll('#hero .fold-text-piece');
+        heroPieces.forEach((piece, i) => {
+          setTimeout(() => {
+            piece.classList.remove('is-folded');
+            piece.classList.add('is-unfolded');
+          }, 350 + i * 160);
+        });
+
+        // Below-the-fold headings reveal via IntersectionObserver
+        const otherFoldContainers = document.querySelectorAll('section:not(#hero) .fold-text');
+        const foldObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const pieces = entry.target.querySelectorAll('.fold-text-piece');
+            pieces.forEach((piece, i) => {
+              setTimeout(() => {
+                piece.classList.remove('is-folded');
+                piece.classList.add('is-unfolded');
+              }, i * 160);
+            });
+            foldObserver.unobserve(entry.target);
+          });
+        }, { threshold: 0.15, rootMargin: '0px 0px -30px 0px' });
+
+        otherFoldContainers.forEach(el => foldObserver.observe(el));
+      }
+    }
+
+    // Run fold text setup
+    initFoldText();
+
+    /* ── Attendance Ring Animation ──────────────────────────── */
+    const ring = document.getElementById('hero-ring');
+    const ringDisplay = document.getElementById('ring-pct-display');
+    const CIRC = 2 * Math.PI * 60; // 376.99
+    const TARGET = 82;
+
+    function animateRing() {
+      const DURATION = 1500;
+      const start = performance.now();
+      function step(now) {
+        const t = Math.min((now - start) / DURATION, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        const cur = Math.round(ease * TARGET);
+        if (ring) {
+          ring.style.strokeDashoffset = CIRC * (1 - ease * TARGET / 100);
+          ring.className = 'ring-fill' + (cur >= 80 ? '' : cur >= 75 ? ' warning' : ' critical');
+        }
+        if (ringDisplay) ringDisplay.textContent = cur + '%';
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    setTimeout(animateRing, 600);
+
+    /* ── Count-up ───────────────────────────────────────────── */
+    function countUp(el) {
+      const raw = el.getAttribute('data-target');
+      if (!raw || raw === 'inf') return;
+      const target = parseInt(raw, 10);
+      const suffix = el.getAttribute('data-suffix') || '';
+      const DURATION = 1200;
+      const start = performance.now();
+      function step(now) {
+        const t = Math.min((now - start) / DURATION, 1);
+        const ease = 1 - Math.pow(1 - t, 2);
+        el.textContent = Math.round(ease * target) + suffix;
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    /* ── Apply js-reveal class to cards and elements ────────── */
+    if (!reduced) {
+      document.querySelectorAll('.feature-card, #browser-mockup, .trust-item').forEach(el => {
+        el.classList.add('js-reveal');
+      });
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('visible');
+          io.unobserve(entry.target);
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+      document.querySelectorAll('.js-reveal').forEach(el => io.observe(el));
+
+      // Feature cards stagger
+      document.querySelectorAll('.feature-card').forEach((el, i) => {
+        const staggerIo = new IntersectionObserver((entries) => {
+          if (!entries[0].isIntersecting) return;
+          setTimeout(() => el.classList.add('visible'), (i % 3) * 90);
+          staggerIo.unobserve(el);
+        }, { threshold: 0.1 });
+        staggerIo.observe(el);
+      });
+
+      // Count-up on trust strip
+      document.querySelectorAll('.trust-value[data-target]').forEach(el => {
+        const row = el.closest('.trust-item') || el;
+        new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            countUp(el);
+          }
+        }, { threshold: 0.2 }).observe(row);
+      });
+
+      // Connector line draw-in
+      const howSection = document.getElementById('how-it-works');
+      if (howSection) {
+        new IntersectionObserver((entries) => {
+          if (!entries[0].isIntersecting) return;
+          const c1 = document.getElementById('connector-1');
+          const c2 = document.getElementById('connector-2');
+          if (c1) { setTimeout(() => { c1.style.transition = 'transform 0.65s cubic-bezier(0.4,0,0.2,1)'; c1.style.transform = 'scaleX(1)'; }, 300); }
+          if (c2) { setTimeout(() => { c2.style.transition = 'transform 0.65s cubic-bezier(0.4,0,0.2,1)'; c2.style.transform = 'scaleX(1)'; }, 500); }
+        }, { threshold: 0.25 }).observe(howSection);
+      }
+    } else {
+      ['connector-1', 'connector-2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.transform = 'scaleX(1)';
+      });
+      document.querySelectorAll('.trust-value[data-target]').forEach(el => countUp(el));
+    }
+
+    /* ── Hero entrance ──────────────────────────────────────── */
+    if (!reduced && typeof gsap !== 'undefined') {
+      gsap.timeline({ delay: 0.1 })
+        .from('#hero-tag',      { opacity: 0, y: 16, duration: 0.45, ease: 'power2.out' })
+        .from('#hero-sub',      { opacity: 0, y: 16, duration: 0.45, ease: 'power2.out' }, '-=0.2')
+        .from('#hero-ctas',     { opacity: 0, y: 14, duration: 0.4,  ease: 'power2.out' }, '-=0.2')
+        .from('#hero-proof',    { opacity: 0, y: 10, duration: 0.35, ease: 'power2.out' }, '-=0.15')
+        .from('#hero-visual',   { opacity: 0, scale: 0.96, y: 20, duration: 0.6, ease: 'power2.out' }, '-=0.5');
+    }
+
+    /* ── FAQ Accordion ──────────────────────────────────────── */
+    document.querySelectorAll('.faq-question').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = btn.closest('.faq-item');
+        if (!item) return;
+        const isOpen = item.classList.contains('open');
+
+        // Close all items
+        document.querySelectorAll('.faq-item.open').forEach(el => {
+          el.classList.remove('open');
+          el.querySelector('.faq-question')?.setAttribute('aria-expanded', 'false');
+        });
+
+        // Toggle selected
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
