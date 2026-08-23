@@ -94,7 +94,7 @@ window.ClassTrackApp = {
         window.location.replace('login.html');
         return;
       }
-      window.location.replace('landing.html');
+      window.location.replace('index.html');
       return;
     } else {
       this.updateProfileBadges();

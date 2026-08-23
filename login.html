@@ -23,7 +23,7 @@
       if (cachedUser) {
         const user = JSON.parse(cachedUser);
         if (user && user.id && !hash.includes('reset-password')) {
-          window.location.replace('index.html');
+          window.location.replace('app.html');
         }
       }
     } catch (e) {}
@@ -67,7 +67,7 @@
 
       <!-- Top Brand Header -->
       <div class="relative z-10 flex items-center gap-3">
-        <a href="landing.html" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
+        <a href="index.html" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
           <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg font-bold text-white bg-blue-600">
             <span class="material-symbols-outlined" style="font-size: 26px;">school</span>
           </div>
@@ -151,7 +151,7 @@
         
         <!-- Mobile Brand Header -->
         <div class="flex flex-col items-center text-center gap-1.5 lg:hidden mb-2">
-          <a href="landing.html" class="flex flex-col items-center gap-1.5">
+          <a href="index.html" class="flex flex-col items-center gap-1.5">
             <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-md text-white bg-blue-600 mb-1">
               <span class="material-symbols-outlined" style="font-size: 26px;">school</span>
             </div>
@@ -431,7 +431,7 @@
         if (res.success) {
           showToast(`Welcome back, ${res.user.fullName}!`, 'success');
           setTimeout(() => {
-            window.location.replace('index.html');
+            window.location.replace('app.html');
           }, 400);
         } else {
           showToast(res.error, 'error');

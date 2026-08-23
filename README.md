@@ -62,8 +62,8 @@ Backed by secure real-time cloud database synchronization and Row-Level Security
 ├── supabase/
 │   └── schema.sql          # PostgreSQL database schema & RLS policies
 ├── build.js                # Local config builder script
-├── index.html              # Main application dashboard (SPA)
-├── landing.html            # Public showcase landing page
+├── index.html              # Public showcase landing page (Root homepage)
+├── app.html                # Main student attendance dashboard (App)
 ├── login.html              # Dedicated sign-in page
 ├── signup.html             # Dedicated sign-up page
 ├── package.json            # Project manifest & scripts
@@ -102,7 +102,7 @@ python -m http.server 8000
 # Or using Node http-server / Live Server
 npx serve .
 ```
-Visit `http://localhost:8000/landing.html` in your browser.
+Visit `http://localhost:8000` in your browser.
 
 ---
 
