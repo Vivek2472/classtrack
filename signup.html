@@ -186,9 +186,12 @@
             </label>
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">mail</span>
-              <input id="signup-email" type="email" name="email" required placeholder="student@example.com or you@gmail.com" class="form-input font-body-md" style="padding-left: 42px; height: 44px; border-radius: 10px;">
+              <input id="signup-email" type="email" name="email" required placeholder="you@gmail.com, you@outlook.com" class="form-input font-body-md" style="padding-left: 42px; height: 44px; border-radius: 10px;">
             </div>
-            <span class="text-[11px] text-slate-500 dark:text-slate-400">Accepts any personal or academic email (Gmail, Outlook, Yahoo, etc.)</span>
+            <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <span class="material-symbols-outlined text-emerald-500" style="font-size: 14px;">verified_user</span>
+              <span>Accepted providers: Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud</span>
+            </div>
           </div>
 
           <!-- Degree / Major & Student ID -->
@@ -381,6 +384,12 @@
         const program = formData.get('program') || 'General Studies';
         const email = (formData.get('email') || '').trim();
         const password = formData.get('password');
+
+        // Client-side trusted email check
+        if (!window.ClassTrackAuth.isTrustedEmail(email)) {
+          showToast('Please sign up with a trusted email provider: Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud.', 'warning');
+          return;
+        }
 
         const skippedHidden = document.getElementById('signup-semester-skipped');
         const isSkipped = skippedHidden && skippedHidden.value === 'true';

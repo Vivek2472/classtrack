@@ -167,7 +167,141 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
-     Supabase Sign Up (With Duplicate Email Detection)
+  /* ----------------------------------------------------
+     Trusted Email Providers & Security Rules
+  ----------------------------------------------------- */
+
+  isTrustedEmail(email) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) return false;
+    const parts = email.trim().toLowerCase().split('@');
+    if (parts.length !== 2) return false;
+    const domain = parts[1].trim();
+
+    const TRUSTED_DOMAINS = [
+      // Google
+      'gmail.com', 'googlemail.com',
+      // Microsoft
+      'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'office365.com', 'outlook.in', 'hotmail.co.uk',
+      // Proton Mail
+      'proton.me', 'protonmail.com', 'pm.me',
+      // Yahoo Mail
+      'yahoo.com', 'ymail.com', 'myyahoo.com', 'yahoo.co.in', 'yahoo.co.uk', 'yahoo.ca', 'yahoo.com.au', 'yahoo.fr', 'yahoo.de', 'yahoo.es', 'yahoo.it', 'yahoo.com.br',
+      // Zoho Mail
+      'zohomail.com', 'zoho.com', 'zohomail.in', 'zoho.in', 'zohomail.eu', 'zoho.eu',
+      // Apple iCloud
+      'icloud.com', 'me.com', 'mac.com'
+    ];
+
+    if (TRUSTED_DOMAINS.includes(domain)) return true;
+
+    // Regional yahoo and zoho domain extensions
+    if (domain.startsWith('yahoo.') || domain.endsWith('.yahoo.com') || domain.startsWith('zoho.')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /* ----------------------------------------------------
+     Login Rate Limiting & 1-Hour Lockout Manager
+  ----------------------------------------------------- */
+
+  getLockoutStatus(email) {
+    if (!email) return { isLocked: false, remainingAttempts: 5 };
+    const key = email.trim().toLowerCase();
+    try {
+      const records = JSON.parse(localStorage.getItem('classtrack_login_rate_limits') || '{}');
+      const item = records[key];
+      if (!item) return { isLocked: false, remainingAttempts: 5 };
+
+      const now = Date.now();
+      const ONE_HOUR = 60 * 60 * 1000;
+
+      // If locked, check if 1 hour has elapsed
+      if (item.lockedUntil && now < item.lockedUntil) {
+        const remainingMs = item.lockedUntil - now;
+        const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+        return {
+          isLocked: true,
+          lockedUntil: item.lockedUntil,
+          remainingMinutes,
+          remainingAttempts: 0
+        };
+      }
+
+      // If window passed (> 1 hour since first attempt), reset
+      if (item.firstAttempt && (now - item.firstAttempt) > ONE_HOUR) {
+        delete records[key];
+        localStorage.setItem('classtrack_login_rate_limits', JSON.stringify(records));
+        return { isLocked: false, remainingAttempts: 5 };
+      }
+
+      const attempts = item.attempts || 0;
+      const remainingAttempts = Math.max(0, 5 - attempts);
+      return {
+        isLocked: false,
+        attempts,
+        remainingAttempts
+      };
+    } catch (e) {
+      return { isLocked: false, remainingAttempts: 5 };
+    }
+  }
+
+  recordFailedLogin(email) {
+    if (!email) return { isLocked: false, remainingAttempts: 4 };
+    const key = email.trim().toLowerCase();
+    try {
+      const records = JSON.parse(localStorage.getItem('classtrack_login_rate_limits') || '{}');
+      const now = Date.now();
+      const ONE_HOUR = 60 * 60 * 1000;
+
+      let item = records[key];
+      if (!item || (item.firstAttempt && (now - item.firstAttempt) > ONE_HOUR && !item.lockedUntil)) {
+        item = { attempts: 0, firstAttempt: now, lockedUntil: null };
+      }
+
+      item.attempts = (item.attempts || 0) + 1;
+
+      // Lock if 5 attempts reached
+      if (item.attempts >= 5) {
+        item.lockedUntil = now + ONE_HOUR;
+        records[key] = item;
+        localStorage.setItem('classtrack_login_rate_limits', JSON.stringify(records));
+        return {
+          isLocked: true,
+          lockedUntil: item.lockedUntil,
+          remainingMinutes: 60,
+          remainingAttempts: 0
+        };
+      }
+
+      records[key] = item;
+      localStorage.setItem('classtrack_login_rate_limits', JSON.stringify(records));
+      return {
+        isLocked: false,
+        attempts: item.attempts,
+        remainingAttempts: Math.max(0, 5 - item.attempts)
+      };
+    } catch (e) {
+      return { isLocked: false, remainingAttempts: 4 };
+    }
+  }
+
+  clearLoginAttempts(email) {
+    if (!email) return;
+    const key = email.trim().toLowerCase();
+    try {
+      const records = JSON.parse(localStorage.getItem('classtrack_login_rate_limits') || '{}');
+      if (records[key]) {
+        delete records[key];
+        localStorage.setItem('classtrack_login_rate_limits', JSON.stringify(records));
+      }
+    } catch (e) {}
+  }
+
+  /* ----------------------------------------------------
+     Sign Up (With Trusted Email Enforcement)
   ----------------------------------------------------- */
 
   async signUp({ fullName, universityId = '', branch = '', program = '', semester = '', email, password, phone = '' }) {
@@ -176,6 +310,15 @@ class AuthManager {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Enforce trusted email providers
+    if (!this.isTrustedEmail(cleanEmail)) {
+      return {
+        success: false,
+        error: 'Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).'
+      };
+    }
+
     const cleanId = universityId ? universityId.trim().toUpperCase() : '';
     const displayProgram = program.trim() || branch.trim() || 'General Studies';
     const displaySemester = semester && semester.trim() && semester.toLowerCase() !== 'skip' ? semester.trim() : 'None';
@@ -282,7 +425,7 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
-     Cloud Sign In
+     Sign In (With Trusted Provider & 5-Attempt Lockout)
   ----------------------------------------------------- */
 
   async login(email, password) {
@@ -291,6 +434,26 @@ class AuthManager {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // 1. Enforce trusted email providers
+    if (!this.isTrustedEmail(cleanEmail)) {
+      return {
+        success: false,
+        error: 'Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).'
+      };
+    }
+
+    // 2. Check 5 failed attempts per hour lockout
+    const lockout = this.getLockoutStatus(cleanEmail);
+    if (lockout.isLocked) {
+      return {
+        success: false,
+        isLocked: true,
+        remainingMinutes: lockout.remainingMinutes,
+        error: `Account access locked due to 5 failed attempts. Please try again in ${lockout.remainingMinutes} minute(s).`
+      };
+    }
+
     const supabase = this.getSupabase();
     if (!supabase) {
       return { success: false, error: 'Cloud service is initializing. Please try again.' };
@@ -303,10 +466,28 @@ class AuthManager {
       });
 
       if (error) {
-        return { success: false, error: error.message };
+        // Record failed attempt and compute remaining attempts
+        const updatedLock = this.recordFailedLogin(cleanEmail);
+        if (updatedLock.isLocked) {
+          return {
+            success: false,
+            isLocked: true,
+            remainingMinutes: 60,
+            error: 'Maximum login attempts (5) exceeded! Login locked for 1 hour.'
+          };
+        } else {
+          return {
+            success: false,
+            remainingAttempts: updatedLock.remainingAttempts,
+            error: `${error.message} (${updatedLock.remainingAttempts} attempt(s) remaining before 1-hour lockout).`
+          };
+        }
       }
 
       if (data?.session && data?.user) {
+        // Clear rate limit tracking on successful login
+        this.clearLoginAttempts(cleanEmail);
+
         this.setSessionData(data.session);
 
         // Fetch live database records from cloud database
@@ -331,6 +512,15 @@ class AuthManager {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+
+    // Enforce trusted email providers
+    if (!this.isTrustedEmail(cleanEmail)) {
+      return {
+        success: false,
+        error: 'Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).'
+      };
+    }
+
     const supabase = this.getSupabase();
     if (!supabase) {
       return { success: false, error: 'Cloud service is initializing. Please try again.' };

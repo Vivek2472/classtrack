@@ -171,6 +171,12 @@
         <!-- Login Form -->
         <form id="auth-login-form" class="flex flex-col gap-4" onsubmit="handleLoginSubmit(event)">
           
+          <!-- Lockout Alert Banner -->
+          <div id="login-lockout-banner" class="hidden p-3.5 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 text-xs flex items-center gap-2.5">
+            <span class="material-symbols-outlined shrink-0 text-red-500" style="font-size: 20px;">lock_clock</span>
+            <span id="login-lockout-text" class="font-medium">Account locked due to too many failed attempts.</span>
+          </div>
+
           <!-- Email Input -->
           <div class="flex flex-col gap-1.5">
             <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="login-email">
@@ -178,7 +184,11 @@
             </label>
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">mail</span>
-              <input id="login-email" type="email" name="email" required placeholder="you@example.com" class="form-input font-body-md" style="padding-left: 42px; height: 46px; border-radius: 10px;">
+              <input id="login-email" type="email" name="email" required placeholder="you@gmail.com" onblur="checkEmailLockout(this.value)" class="form-input font-body-md" style="padding-left: 42px; height: 46px; border-radius: 10px;">
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              <span class="material-symbols-outlined text-emerald-500" style="font-size: 14px;">verified_user</span>
+              <span>Trusted providers: Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud</span>
             </div>
           </div>
 
@@ -405,9 +415,53 @@
       }
     });
 
+    // Real-time security lockout and trusted provider validator
+    function checkEmailLockout(email) {
+      const banner = document.getElementById('login-lockout-banner');
+      const textEl = document.getElementById('login-lockout-text');
+      if (!banner || !textEl || !email || !window.ClassTrackAuth) return;
+
+      if (!window.ClassTrackAuth.isTrustedEmail(email)) {
+        banner.className = 'p-3.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2.5';
+        textEl.textContent = 'Please use a trusted email provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).';
+        return;
+      }
+
+      const lock = window.ClassTrackAuth.getLockoutStatus(email);
+      if (lock.isLocked) {
+        banner.className = 'p-3.5 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 text-xs flex items-center gap-2.5';
+        textEl.textContent = `Account locked due to 5 failed attempts. Please try again in ${lock.remainingMinutes} minute(s).`;
+      } else if (lock.attempts > 0) {
+        banner.className = 'p-3.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2.5';
+        textEl.textContent = `Security notice: ${lock.remainingAttempts} login attempt(s) remaining before 1-hour account lockout.`;
+      } else {
+        banner.className = 'hidden';
+      }
+    }
+
     // Form Submissions
     async function handleLoginSubmit(e) {
       e.preventDefault();
+      const formData = new FormData(e.target);
+      const email = (formData.get('email') || '').trim();
+      const password = formData.get('password');
+      const remember = formData.get('remember') !== null;
+
+      // 1. Client-side trusted email check
+      if (!window.ClassTrackAuth.isTrustedEmail(email)) {
+        showToast('Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).', 'warning');
+        checkEmailLockout(email);
+        return;
+      }
+
+      // 2. Client-side lockout check
+      const lockStatus = window.ClassTrackAuth.getLockoutStatus(email);
+      if (lockStatus.isLocked) {
+        showToast(`Account locked. Please try again in ${lockStatus.remainingMinutes} minute(s).`, 'error');
+        checkEmailLockout(email);
+        return;
+      }
+
       const submitBtn = e.target.querySelector('button[type="submit"]');
       const originalHTML = submitBtn ? submitBtn.innerHTML : '';
       if (submitBtn) {
@@ -416,11 +470,6 @@
       }
 
       try {
-        const formData = new FormData(e.target);
-        const email = (formData.get('email') || '').trim();
-        const password = formData.get('password');
-        const remember = formData.get('remember') !== null;
-
         if (remember && email) {
           localStorage.setItem('classtrack_remember_email', email);
         } else {
@@ -435,6 +484,7 @@
           }, 400);
         } else {
           showToast(res.error, 'error');
+          checkEmailLockout(email);
         }
       } catch (err) {
         showToast(err.message || 'Login error occurred.', 'error');
