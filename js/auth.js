@@ -311,11 +311,11 @@ class AuthManager {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Enforce trusted email providers
+    // 1. Enforce trusted email providers & reject disposable/temporary emails
     if (!this.isTrustedEmail(cleanEmail)) {
       return {
         success: false,
-        error: 'Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).'
+        error: 'Temporary, disposable, or unverified emails are not permitted. Please use a trusted provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud).'
       };
     }
 
@@ -439,7 +439,7 @@ class AuthManager {
     if (!this.isTrustedEmail(cleanEmail)) {
       return {
         success: false,
-        error: 'Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).'
+        error: 'Temporary, disposable, or unverified emails are not permitted. Please sign in with a trusted provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud).'
       };
     }
 
@@ -517,7 +517,7 @@ class AuthManager {
     if (!this.isTrustedEmail(cleanEmail)) {
       return {
         success: false,
-        error: 'Only trusted email providers are allowed (Gmail, Outlook, ProtonMail, Yahoo, Zoho, iCloud).'
+        error: 'Temporary, disposable, or unverified emails are not permitted. Please use a trusted provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud).'
       };
     }
 
