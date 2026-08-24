@@ -18,17 +18,24 @@ window.ClassTrackProfile = {
     const totalCourses = (state.subjects || []).length;
     const totalCredits = (state.subjects || []).reduce((acc, s) => acc + (s.credits || 3), 0);
 
+    const esc = str => (window.ClassTrackApp ? window.ClassTrackApp.escapeHTML(str) : (str || ''));
+    const safeName = esc(name);
+    const safeRollNo = esc(rollNo);
+    const safeEmail = esc(email);
+    const safeProgram = esc(program);
+    const safeSemester = esc(semester);
+
     container.innerHTML = `
       <div class="profile-view-wrapper flex flex-col gap-6 max-w-4xl mx-auto pb-12 animate-fade-in">
         
-        <!-- Top App Bar / Title Header -->
+        <!-- Top App Bar / Title Header with Single Edit Profile Action -->
         <div class="flex items-center justify-between">
           <div>
             <h1 class="font-headline-lg font-bold text-primary" style="color: var(--color-on-background);">Student Profile</h1>
             <p class="font-body-md" style="color: var(--color-on-surface-variant);">Manage your academic identity and attendance goal.</p>
           </div>
           <div class="flex items-center gap-2">
-            <button class="btn btn-secondary btn-sm" onclick="window.ClassTrackApp.openProfileModal()">
+            <button class="btn btn-primary btn-sm" onclick="window.ClassTrackApp.openProfileModal()">
               <span class="material-symbols-outlined" style="font-size: 16px;">edit</span> Edit Profile
             </button>
             <button class="btn btn-danger btn-sm" onclick="window.ClassTrackProfile.handleLogout()">
@@ -41,17 +48,17 @@ window.ClassTrackProfile = {
         <section class="edu-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div class="flex-1 flex flex-col gap-1.5">
             <div class="flex flex-wrap items-center gap-2">
-              <h2 class="font-headline-lg font-bold" style="color: var(--color-on-background);">${name}</h2>
+              <h2 class="font-headline-lg font-bold" style="color: var(--color-on-background);">${safeName}</h2>
               <span class="status-chip status-safe">
                 <span class="material-symbols-outlined" style="font-size: 14px;">verified</span>
                 Enrolled Student
               </span>
             </div>
-            <p class="font-label-md font-semibold" style="color: var(--color-on-surface-variant);">${semester ? `${program} • ${semester}` : program}</p>
+            <p class="font-label-md font-semibold" style="color: var(--color-on-surface-variant);">${safeSemester ? `${safeProgram} • ${safeSemester}` : safeProgram}</p>
             <div class="flex flex-wrap items-center gap-2 mt-1">
-              ${rollNo ? `
+              ${safeRollNo ? `
                 <span class="font-label-sm px-3 py-1 rounded-full font-mono font-bold" style="background-color: var(--color-surface-container-high); color: var(--color-on-surface);">
-                  ID: ${rollNo}
+                  ID: ${safeRollNo}
                 </span>
               ` : ''}
               <span class="font-label-sm px-3 py-1 rounded-full" style="background-color: var(--color-secondary-container); color: var(--color-on-secondary-container);">
@@ -61,7 +68,7 @@ window.ClassTrackProfile = {
           </div>
         </section>
 
-        <!-- Academic Summary Cards (3 Cards: Attendance, Courses, Margin - Score removed) -->
+        <!-- Academic Summary Cards -->
         <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           
           <!-- Attendance Metric -->
@@ -95,9 +102,6 @@ window.ClassTrackProfile = {
         <section class="edu-card p-0 overflow-hidden">
           <div class="px-6 py-4 border-b flex items-center justify-between" style="background-color: var(--color-surface-container-low); border-color: var(--color-outline-variant);">
             <h3 class="font-label-md uppercase tracking-wider font-bold" style="color: var(--color-on-surface-variant);">Personal & Academic Details</h3>
-            <button class="btn btn-secondary btn-sm" onclick="window.ClassTrackApp.openProfileModal()">
-              <span class="material-symbols-outlined" style="font-size: 14px;">edit</span> Edit
-            </button>
           </div>
 
           <div class="flex flex-col divide-y" style="border-color: var(--color-outline-variant);">
@@ -107,7 +111,7 @@ window.ClassTrackProfile = {
                 <span class="material-symbols-outlined text-outline">badge</span>
                 <span class="font-body-md font-semibold" style="color: var(--color-on-surface);">Student ID / Roll No</span>
               </div>
-              <span class="font-label-md font-mono font-bold" style="color: var(--color-on-surface);">${rollNo || 'Not set'}</span>
+              <span class="font-label-md font-mono font-bold" style="color: var(--color-on-surface);">${safeRollNo || 'Not set'}</span>
             </div>
 
             <div class="flex items-center justify-between px-6 py-4">
@@ -115,7 +119,7 @@ window.ClassTrackProfile = {
                 <span class="material-symbols-outlined text-outline">mail</span>
                 <span class="font-body-md font-semibold" style="color: var(--color-on-surface);">Email Address</span>
               </div>
-              <span class="font-label-md font-mono" style="color: var(--color-on-surface-variant);">${email || 'Not set'}</span>
+              <span class="font-label-md font-mono" style="color: var(--color-on-surface-variant);">${safeEmail || 'Not set'}</span>
             </div>
 
             <div class="flex items-center justify-between px-6 py-4">
@@ -123,7 +127,7 @@ window.ClassTrackProfile = {
                 <span class="material-symbols-outlined text-outline">apartment</span>
                 <span class="font-body-md font-semibold" style="color: var(--color-on-surface);">Degree / Major</span>
               </div>
-              <span class="font-label-md" style="color: var(--color-on-surface-variant);">${program}</span>
+              <span class="font-label-md" style="color: var(--color-on-surface-variant);">${safeProgram}</span>
             </div>
 
             <div class="flex items-center justify-between px-6 py-4">
@@ -131,7 +135,7 @@ window.ClassTrackProfile = {
                 <span class="material-symbols-outlined text-outline">history_edu</span>
                 <span class="font-body-md font-semibold" style="color: var(--color-on-surface);">Current Semester</span>
               </div>
-              <span class="font-label-md" style="color: var(--color-on-surface-variant);">${semester || 'None (Annual/Flexible)'}</span>
+              <span class="font-label-md" style="color: var(--color-on-surface-variant);">${safeSemester || 'None (Annual/Flexible)'}</span>
             </div>
 
             <div class="flex items-center justify-between px-6 py-4">
@@ -143,19 +147,6 @@ window.ClassTrackProfile = {
             </div>
 
           </div>
-        </section>
-
-        <!-- Actions Section (Clean Edit & Logout only) -->
-        <section class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
-          <button class="btn btn-secondary flex items-center justify-center gap-2 py-3 px-6 w-full sm:w-auto" onclick="window.ClassTrackApp.openProfileModal()">
-            <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
-            <span>Edit Profile &amp; ID</span>
-          </button>
-
-          <button class="btn btn-danger flex items-center justify-center gap-2 py-3 px-6 w-full sm:w-auto" onclick="window.ClassTrackProfile.handleLogout()">
-            <span class="material-symbols-outlined" style="font-size: 18px;">logout</span>
-            <span>Log Out</span>
-          </button>
         </section>
 
       </div>

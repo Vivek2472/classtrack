@@ -66,6 +66,20 @@ class SupabaseSyncManager {
 
       if (profileErr) console.warn('Supabase profile fetch error:', profileErr.message);
 
+      // Server-Side Single Active Session Enforcement
+      const localToken = localStorage.getItem('classtrack_active_session_token');
+      if (profileData && profileData.active_session_token && localToken && profileData.active_session_token !== localToken) {
+        console.warn('Single session enforcement: Logged out due to session on another device.');
+        if (window.ClassTrackApp && typeof window.ClassTrackApp.showToast === 'function') {
+          window.ClassTrackApp.showToast('Logged out: Your account was signed in on another device.', 'warning');
+        }
+        if (window.ClassTrackAuth) {
+          await window.ClassTrackAuth.logout();
+          window.location.replace('login.html');
+          return false;
+        }
+      }
+
       // 2. Fetch Subjects
       const { data: subjectsData, error: subjectsErr } = await supabase
         .from('subjects')
@@ -377,6 +391,7 @@ class SupabaseSyncManager {
         strict_threshold: parseInt(profileData.strictThreshold || profileData.strict_threshold, 10) || 80,
         dark_mode: settingsData.darkMode !== undefined ? Boolean(settingsData.darkMode) : false,
         timetable_mode: settingsData.timetableMode || 'personal',
+        active_session_token: profileData.activeSessionToken || localStorage.getItem('classtrack_active_session_token') || null,
         updated_at: new Date().toISOString()
       };
 

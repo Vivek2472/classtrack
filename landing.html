@@ -8,6 +8,22 @@
   <meta name="theme-color" content="#0f172a">
   <title>ClassTrack — Never Miss the 75% Cutoff Again</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <script>
+    // If returning authenticated user, redirect directly to dashboard
+    try {
+      const cachedUser = localStorage.getItem('classtrack_auth_user');
+      if (cachedUser) {
+        const u = JSON.parse(cachedUser);
+        if (u && u.id) {
+          window.location.replace('app.html');
+        }
+      }
+    } catch(e) {}
+  </script>
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

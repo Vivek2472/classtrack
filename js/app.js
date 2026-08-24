@@ -78,8 +78,6 @@ window.ClassTrackApp = {
 
     const hash = window.location.hash.replace('#', '');
     const authViews = ['login', 'signup', 'forgot-password', 'reset-password'];
-    const params = new URLSearchParams(window.location.search);
-    const fromLanding = params.get('fromLanding');
 
     if (!window.ClassTrackAuth.isAuthenticated()) {
       if (hash === 'signup') {
@@ -90,11 +88,7 @@ window.ClassTrackApp = {
         window.location.replace('login.html#' + hash);
         return;
       }
-      if (fromLanding || hash === 'login') {
-        window.location.replace('login.html');
-        return;
-      }
-      window.location.replace('index.html');
+      window.location.replace('login.html');
       return;
     } else {
       this.updateProfileBadges();
@@ -269,13 +263,23 @@ window.ClassTrackApp = {
     this.navigate('subjectDetail', subjectId);
   },
 
+  escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
   refreshCurrentView() {
     const container = document.getElementById('view-content');
     if (!container) return;
 
     if (this.currentView === 'dashboard') window.EduTrackDashboard.render(container);
     else if (this.currentView === 'subjects') window.EduTrackSubjects.render(container);
-    else if (this.currentView === 'subjectDetail') window.EduTrackSubjectDetail.render(container);
+    else if (this.currentView === 'subjectDetail') window.EduTrackSubjectDetail.render(container, this.currentParams);
     else if (this.currentView === 'schedule') window.EduTrackSchedule.render(container);
     else if (this.currentView === 'analytics') window.EduTrackAnalytics.render(container);
     else if (this.currentView === 'profile') window.ClassTrackProfile.render(container);
@@ -439,66 +443,27 @@ window.ClassTrackApp = {
   syncSlotTimes(source) {
     const startInput = document.getElementById('slot-start-time');
     const endInput = document.getElementById('slot-end-time');
-    const durationInput = document.getElementById('slot-duration');
     const daySelect = document.querySelector('select[name="day"]');
     const summarySpan = document.getElementById('slot-time-summary');
-    if (!startInput || !endInput || !durationInput) return;
+    if (!startInput || !endInput) return;
 
-    if (source === 'start') {
-      if (startInput.value) {
-        const startM = this.timeToMinutes(startInput.value);
-        if (endInput.value) {
-          const endM = this.timeToMinutes(endInput.value);
-          if (endM > startM) {
-            const diffHours = parseFloat(((endM - startM) / 60).toFixed(2));
-            durationInput.value = diffHours;
-          } else {
-            const dur = parseFloat(durationInput.value) || 1.5;
-            endInput.value = this.minutesToTime(startM + Math.round(dur * 60));
-          }
-        } else {
-          const dur = parseFloat(durationInput.value) || 1.5;
-          endInput.value = this.minutesToTime(startM + Math.round(dur * 60));
-        }
-      }
-    } else if (source === 'end') {
-      if (startInput.value && endInput.value) {
-        const startM = this.timeToMinutes(startInput.value);
-        const endM = this.timeToMinutes(endInput.value);
-        if (endM > startM) {
-          const diffHours = parseFloat(((endM - startM) / 60).toFixed(2));
-          durationInput.value = diffHours;
-        }
-      }
-    } else if (source === 'duration') {
-      if (startInput.value) {
-        const startM = this.timeToMinutes(startInput.value);
-        const dur = parseFloat(durationInput.value) || 1.5;
-        endInput.value = this.minutesToTime(startM + Math.round(dur * 60));
+    if (source === 'start' && startInput.value) {
+      const startM = this.timeToMinutes(startInput.value);
+      if (!endInput.value || this.timeToMinutes(endInput.value) <= startM) {
+        // Automatically default end time to 1 hour after start time
+        endInput.value = this.minutesToTime(startM + 60);
       }
     }
 
     const currentDay = daySelect ? daySelect.value : 'Monday';
     const academicDate = this.getAcademicDateForDay(currentDay);
 
-    if (summarySpan && startInput.value) {
-      if (endInput.value) {
-        const startM = this.timeToMinutes(startInput.value);
-        const endM = this.timeToMinutes(endInput.value);
-        const diffMins = endM > startM ? (endM - startM) : Math.round((parseFloat(durationInput.value) || 1) * 60);
-        const durationHuman = this.formatDurationHuman(diffMins, 'mins');
-        summarySpan.textContent = `${academicDate.shortHeader} ${this.formatTime12Hour(startInput.value)} - ${this.formatTime12Hour(endInput.value)} (${durationHuman})`;
-      } else {
-        summarySpan.textContent = `${academicDate.shortHeader} ${this.formatTime12Hour(startInput.value)} - ...`;
-      }
-    }
-  },
-
-  setSlotDurationPreset(dur) {
-    const durationInput = document.getElementById('slot-duration');
-    if (durationInput) {
-      durationInput.value = dur;
-      this.syncSlotTimes('duration');
+    if (summarySpan && startInput.value && endInput.value) {
+      const startM = this.timeToMinutes(startInput.value);
+      const endM = this.timeToMinutes(endInput.value);
+      const diffMins = endM > startM ? (endM - startM) : 60;
+      const durationHuman = this.formatDurationHuman(diffMins, 'mins');
+      summarySpan.textContent = `${academicDate.shortHeader} ${this.formatTime12Hour(startInput.value)} - ${this.formatTime12Hour(endInput.value)} (${durationHuman})`;
     }
   },
 
@@ -801,16 +766,16 @@ window.ClassTrackApp = {
             </select>
           </div>
 
-          <!-- Synchronized Start Time, End Time & Duration -->
+          <!-- Synchronized Start Time & End Time -->
           <div class="p-3.5 sm:p-4 rounded-xl mb-4" style="background-color: var(--color-surface-container-low); border: 1px solid var(--color-outline-variant);">
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 mb-3">
-              <span class="font-label-sm uppercase font-bold text-xs" style="color: var(--color-on-surface-variant);">Time & Duration Sync</span>
+              <span class="font-label-sm uppercase font-bold text-xs" style="color: var(--color-on-surface-variant);">Time & Schedule</span>
               <span id="slot-time-summary" class="font-label-sm px-2.5 py-1 rounded font-mono font-bold text-xs" style="background-color: var(--color-surface-container-high); color: var(--color-on-surface); word-break: break-word;">
-                09:00 AM - 10:30 AM (1 hr 30 mins)
+                09:00 AM - 10:00 AM (1 hr)
               </span>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="form-group mb-0">
                 <label class="form-label text-xs font-semibold">Start Time</label>
                 <input type="time" name="startTime" id="slot-start-time" value="09:00" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('start')">
@@ -818,23 +783,8 @@ window.ClassTrackApp = {
 
               <div class="form-group mb-0">
                 <label class="form-label text-xs font-semibold">End Time</label>
-                <input type="time" name="endTime" id="slot-end-time" value="10:30" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('end')">
+                <input type="time" name="endTime" id="slot-end-time" value="10:00" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('end')">
               </div>
-
-              <div class="form-group mb-0 col-span-2 sm:col-span-1">
-                <label class="form-label text-xs font-semibold">Duration (Hours)</label>
-                <input type="number" name="duration" id="slot-duration" value="1.5" min="0.25" max="8" step="0.25" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('duration')">
-              </div>
-            </div>
-
-            <!-- Quick Duration Presets -->
-            <div class="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t" style="border-color: var(--color-outline-variant);">
-              <span class="font-label-sm text-xs opacity-70" style="color: var(--color-on-surface-variant);">Presets:</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(0.75)">45m</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(1)">1h</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(1.5)">1.5h</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(2)">2h</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(3)">3h (Lab)</button>
             </div>
           </div>
 
@@ -865,13 +815,13 @@ window.ClassTrackApp = {
     }
 
     const startTime = formData.get('startTime') || '09:00';
-    const endTime = formData.get('endTime') || '10:30';
-    const duration = parseFloat(formData.get('duration')) || 1.5;
-    const room = (formData.get('room') && formData.get('room').trim()) ? formData.get('room').trim() : 'TBA';
-    const timeStr = `${this.formatTime12Hour(startTime)} - ${this.formatTime12Hour(endTime)}`;
+    const endTime = formData.get('endTime') || '10:00';
     const startM = this.timeToMinutes(startTime);
     const endM = this.timeToMinutes(endTime);
-    const diffMins = endM > startM ? (endM - startM) : Math.round(duration * 60);
+    const diffMins = endM > startM ? (endM - startM) : 60;
+    const duration = parseFloat((diffMins / 60).toFixed(2));
+    const room = (formData.get('room') && formData.get('room').trim()) ? formData.get('room').trim() : 'TBA';
+    const timeStr = `${this.formatTime12Hour(startTime)} - ${this.formatTime12Hour(endTime)}`;
     const durationLabel = this.formatDurationHuman(diffMins, 'mins');
 
     const slotData = {
@@ -929,16 +879,16 @@ window.ClassTrackApp = {
             </select>
           </div>
 
-          <!-- Synchronized Start Time, End Time & Duration -->
+          <!-- Synchronized Start Time & End Time -->
           <div class="p-3.5 sm:p-4 rounded-xl mb-4" style="background-color: var(--color-surface-container-low); border: 1px solid var(--color-outline-variant);">
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1.5 mb-3">
-              <span class="font-label-sm uppercase font-bold text-xs" style="color: var(--color-on-surface-variant);">Time & Duration Sync</span>
+              <span class="font-label-sm uppercase font-bold text-xs" style="color: var(--color-on-surface-variant);">Time & Schedule</span>
               <span id="slot-time-summary" class="font-label-sm px-2.5 py-1 rounded font-mono font-bold text-xs" style="background-color: var(--color-surface-container-high); color: var(--color-on-surface); word-break: break-word;">
                 ${slot.timeStr || 'Slot Time'}
               </span>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div class="form-group mb-0">
                 <label class="form-label text-xs font-semibold">Start Time</label>
                 <input type="time" name="startTime" id="slot-start-time" value="${slot.time || '09:00'}" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('start')">
@@ -946,23 +896,8 @@ window.ClassTrackApp = {
 
               <div class="form-group mb-0">
                 <label class="form-label text-xs font-semibold">End Time</label>
-                <input type="time" name="endTime" id="slot-end-time" value="${this.minutesToTime(this.timeToMinutes(slot.time || '09:00') + Math.round((slot.duration || 1.5) * 60))}" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('end')">
+                <input type="time" name="endTime" id="slot-end-time" value="${this.minutesToTime(this.timeToMinutes(slot.time || '09:00') + Math.round((slot.duration || 1) * 60))}" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('end')">
               </div>
-
-              <div class="form-group mb-0 col-span-2 sm:col-span-1">
-                <label class="form-label text-xs font-semibold">Duration (Hours)</label>
-                <input type="number" name="duration" id="slot-duration" value="${slot.duration || 1.5}" min="0.25" max="8" step="0.25" class="form-input font-mono font-bold" required oninput="window.ClassTrackApp.syncSlotTimes('duration')">
-              </div>
-            </div>
-
-            <!-- Quick Duration Presets -->
-            <div class="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t" style="border-color: var(--color-outline-variant);">
-              <span class="font-label-sm text-xs opacity-70" style="color: var(--color-on-surface-variant);">Presets:</span>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(0.75)">45m</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(1)">1h</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(1.5)">1.5h</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(2)">2h</button>
-              <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.75rem;" onclick="window.ClassTrackApp.setSlotDurationPreset(3)">3h (Lab)</button>
             </div>
           </div>
 
@@ -987,13 +922,13 @@ window.ClassTrackApp = {
     e.preventDefault();
     const formData = new FormData(e.target);
     const startTime = formData.get('startTime') || '09:00';
-    const endTime = formData.get('endTime') || '10:30';
-    const duration = parseFloat(formData.get('duration')) || 1.5;
-    const room = (formData.get('room') && formData.get('room').trim()) ? formData.get('room').trim() : 'TBA';
-    const timeStr = `${this.formatTime12Hour(startTime)} - ${this.formatTime12Hour(endTime)}`;
+    const endTime = formData.get('endTime') || '10:00';
     const startM = this.timeToMinutes(startTime);
     const endM = this.timeToMinutes(endTime);
-    const diffMins = endM > startM ? (endM - startM) : Math.round(duration * 60);
+    const diffMins = endM > startM ? (endM - startM) : 60;
+    const duration = parseFloat((diffMins / 60).toFixed(2));
+    const room = (formData.get('room') && formData.get('room').trim()) ? formData.get('room').trim() : 'TBA';
+    const timeStr = `${this.formatTime12Hour(startTime)} - ${this.formatTime12Hour(endTime)}`;
     const durationLabel = this.formatDurationHuman(diffMins, 'mins');
 
     const slotData = {
@@ -1219,6 +1154,7 @@ window.ClassTrackApp = {
 
   openProfileModal() {
     const state = window.EduTrackState.getState();
+    const authUser = window.ClassTrackAuth ? window.ClassTrackAuth.getCurrentUser() : null;
     const modalContent = document.getElementById('modal-content');
     const modalOverlay = document.getElementById('modal-overlay');
     if (!modalContent || !modalOverlay) return;
@@ -1276,7 +1212,7 @@ window.ClassTrackApp = {
           </div>
 
           <div class="form-group">
-            <label class="form-label">Email Address</label>
+            <label class="form-label">Email Address <span style="text-transform: none; font-weight: normal; opacity: 0.7;">(Updating requires confirmation link from Supabase)</span></label>
             <input type="email" name="email" class="form-input" value="${state.profile?.email || authUser?.email || ''}" placeholder="student@example.com">
           </div>
 
@@ -1301,6 +1237,10 @@ window.ClassTrackApp = {
 
   async submitProfile(e) {
     e.preventDefault();
+    const state = window.EduTrackState.getState();
+    const authUser = window.ClassTrackAuth ? window.ClassTrackAuth.getCurrentUser() : null;
+    const prevEmail = (state.profile?.email || authUser?.email || '').trim().toLowerCase();
+
     const formData = new FormData(e.target);
     const profile = {
       name: (formData.get('name') || '').trim() || 'Student',
@@ -1318,9 +1258,18 @@ window.ClassTrackApp = {
         fullName: profile.name,
         universityId: profile.rollNo,
         branch: profile.program,
-        semester: profile.semester,
-        email: profile.email
+        semester: profile.semester
       });
+
+      const newEmail = (profile.email || '').trim().toLowerCase();
+      if (newEmail && prevEmail && newEmail !== prevEmail) {
+        const emailRes = await window.ClassTrackAuth.updateEmail(newEmail);
+        if (emailRes.success) {
+          this.showToast(emailRes.message, 'info');
+        } else {
+          this.showToast(emailRes.error || 'Failed to send email confirmation', 'warning');
+        }
+      }
     }
 
     this.updateProfileBadges();

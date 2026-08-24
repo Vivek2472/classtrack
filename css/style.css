@@ -405,6 +405,102 @@ body.dark .glass-card {
   color: var(--color-on-surface);
 }
 
+/* =========================================================
+   FORM CONTROLS & ENHANCED DROPDOWN SELECTS
+   ========================================================= */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-on-surface-variant);
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  border: 1.5px solid var(--color-outline-variant);
+  font-family: var(--font-primary);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+body.dark .form-input:focus {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+/* Enhanced Select Dropdowns */
+select, .form-select {
+  width: 100%;
+  padding: 10px 38px 10px 14px;
+  border-radius: 10px;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  border: 1.5px solid var(--color-outline-variant);
+  font-family: var(--font-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+select:hover, .form-select:hover {
+  border-color: var(--color-outline);
+}
+
+select:focus, .form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+body.dark select, body.dark .form-select {
+  background-color: var(--color-surface-container);
+  border-color: var(--color-outline-variant);
+  color: var(--color-on-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+}
+
+body.dark select:focus, body.dark .form-select:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+select option, .form-select option {
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  padding: 10px;
+}
+
+body.dark select option, body.dark .form-select option {
+  background-color: #131b2e;
+  color: #f1f5f9;
+}
+
 /* Attendance Badges & Chips */
 .status-chip {
   display: inline-flex;

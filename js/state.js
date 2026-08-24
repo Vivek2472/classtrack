@@ -111,10 +111,18 @@ class StateManager {
     }
 
     if (percentage >= target) {
-      safeAbsenceMargin = Math.floor((attendedClasses - (targetFraction * totalClasses)) / targetFraction);
+      if (targetFraction <= 0) {
+        safeAbsenceMargin = 999;
+      } else {
+        safeAbsenceMargin = Math.floor((attendedClasses - (targetFraction * totalClasses)) / targetFraction);
+      }
       if (safeAbsenceMargin < 0) safeAbsenceMargin = 0;
     } else {
-      catchUpNeeded = Math.ceil(((targetFraction * totalClasses) - attendedClasses) / (1 - targetFraction));
+      if (targetFraction >= 1.0) {
+        catchUpNeeded = Math.max(0, totalClasses - attendedClasses);
+      } else {
+        catchUpNeeded = Math.ceil(((targetFraction * totalClasses) - attendedClasses) / (1 - targetFraction));
+      }
       if (catchUpNeeded < 0) catchUpNeeded = 0;
     }
 
@@ -165,10 +173,18 @@ class StateManager {
     }
 
     if (percentage >= target) {
-      safeAbsenceMargin = Math.floor((attended - (targetFraction * total)) / targetFraction);
+      if (targetFraction <= 0) {
+        safeAbsenceMargin = 999;
+      } else {
+        safeAbsenceMargin = Math.floor((attended - (targetFraction * total)) / targetFraction);
+      }
       if (safeAbsenceMargin < 0) safeAbsenceMargin = 0;
     } else {
-      catchUpNeeded = Math.ceil(((targetFraction * total) - attended) / (1 - targetFraction));
+      if (targetFraction >= 1.0) {
+        catchUpNeeded = Math.max(0, total - attended);
+      } else {
+        catchUpNeeded = Math.ceil(((targetFraction * total) - attended) / (1 - targetFraction));
+      }
       if (catchUpNeeded < 0) catchUpNeeded = 0;
     }
 
@@ -286,13 +302,22 @@ class StateManager {
     return slotsWithMeta.slice(0, limit);
   }
 
+  getLocalDateString(d = new Date()) {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   /* ----------------------------------------------------
      Attendance Actions (Persisted to Supabase)
   ----------------------------------------------------- */
 
-  logAttendance(subjectId, status, { date = new Date().toISOString().split('T')[0], timeStr = '', type = 'Lecture', remarks = '' } = {}) {
+  logAttendance(subjectId, status, { date, timeStr = '', type = 'Lecture', remarks = '', slotId = '' } = {}) {
     const subject = this.state.subjects.find(s => s.id === subjectId);
     if (!subject) return false;
+
+    const logDate = date || this.getLocalDateString();
 
     if (status === 'present' || status === 'od' || status === 'other_faculty') {
       subject.total = (subject.total || 0) + 1;
@@ -304,9 +329,10 @@ class StateManager {
 
     const newLog = {
       id: 'log_' + Date.now(),
-      date,
+      date: logDate,
       timeStr: timeStr || 'Class Session',
       subjectId,
+      slotId: slotId || '',
       type,
       status,
       remarks
@@ -317,6 +343,7 @@ class StateManager {
 
     if (window.ClassTrackSync) {
       window.ClassTrackSync.syncAttendanceLog(newLog, 'insert');
+      window.ClassTrackSync.syncSubject(subject, 'upsert');
     }
 
     return newLog;

@@ -12,7 +12,7 @@ window.ClassTrackSubjects = {
     const state = stateManager.getState();
     const target = state.profile?.targetThreshold || 75;
 
-    let filteredSubjects = (state.subjects || []).map(s => stateManager.getSubjectStats(s.id));
+    let filteredSubjects = (state.subjects || []).map(s => stateManager.getSubjectStats(s.id)).filter(Boolean);
 
     if (this.currentFilter !== 'all') {
       if (['theory', 'lab', 'tutorial'].includes(this.currentFilter)) {
@@ -404,7 +404,12 @@ window.ClassTrackSubjectDetail = {
                     statusLabel = 'On-Duty';
                   }
 
-                  const formattedDate = new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  let formattedDate = log.date;
+                  if (log.date && log.date.includes('-')) {
+                    const [dy, dm, dd] = log.date.split('-');
+                    const mNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    formattedDate = `${mNames[parseInt(dm, 10) - 1] || ''} ${parseInt(dd, 10)}, ${dy}`;
+                  }
 
                   return `
                     <div class="flex items-center justify-between p-3 rounded-xl border border-transparent hover:border-slate-300 transition-colors" style="background-color: var(--color-surface);">

@@ -1,7 +1,7 @@
 /**
  * ClassTrack Engineering - Authentication & Session Management
  * Powered 100% by Supabase Auth (GoTrue)
- * Real-time fast local caching for instant synchronous rendering on reload
+ * Server-Enforced Single Active Session & Real-time Cloud Synchronization
  */
 
 class AuthManager {
@@ -9,6 +9,7 @@ class AuthManager {
     this.session = null;
     this.user = null;
     this.listeners = [];
+    this.sessionToken = localStorage.getItem('classtrack_active_session_token') || '';
     
     // Fast synchronous cache restore for 0ms visual flash on page reload
     try {
@@ -33,19 +34,39 @@ class AuthManager {
     if (!supabase) return;
 
     try {
+      // Check for recovery token in URL hash
+      const hash = window.location.hash || '';
+      const isRecoveryUrl = hash.includes('type=recovery') || hash.includes('access_token=');
+
       const { data, error } = await supabase.auth.getSession();
       if (data?.session) {
         this.setSessionData(data.session);
         if (window.ClassTrackSync && data.session.user) {
           await window.ClassTrackSync.fetchUserData(data.session.user.id);
         }
-      } else if (!this.user) {
-        this.session = null;
-        this.user = null;
-        this.notify();
+      } else {
+        // No active session on server -> clear cached user to prevent redirect loop
+        if (!isRecoveryUrl) {
+          this.session = null;
+          this.user = null;
+          try {
+            localStorage.removeItem('classtrack_auth_user');
+          } catch (e) {}
+          this.notify();
+        }
       }
 
       supabase.auth.onAuthStateChange(async (event, sbSession) => {
+        if (event === 'PASSWORD_RECOVERY' || (sbSession && isRecoveryUrl)) {
+          this.setSessionData(sbSession);
+          if (window.location.pathname.includes('login.html')) {
+            if (typeof window.showPanel === 'function') {
+              window.showPanel('reset');
+            }
+          }
+          return;
+        }
+
         if (sbSession?.user) {
           this.setSessionData(sbSession);
           if (window.ClassTrackSync) {
@@ -56,6 +77,7 @@ class AuthManager {
           this.user = null;
           try {
             localStorage.removeItem('classtrack_auth_user');
+            localStorage.removeItem('classtrack_active_session_token');
           } catch (e) {}
           if (window.EduTrackState) {
             window.EduTrackState.resetToDefault();
@@ -70,6 +92,15 @@ class AuthManager {
 
   initSupabaseListener() {
     this.init();
+  }
+
+  generateSessionToken() {
+    const token = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 12);
+    this.sessionToken = token;
+    try {
+      localStorage.setItem('classtrack_active_session_token', token);
+    } catch (e) {}
+    return token;
   }
 
   setSessionData(sbSession) {
@@ -127,6 +158,43 @@ class AuthManager {
     }
   }
 
+  /**
+   * Update User Email Address - Dispatches confirmation email from Supabase
+   */
+  async updateEmail(newEmail) {
+    if (!newEmail || !this.isTrustedEmail(newEmail)) {
+      return {
+        success: false,
+        error: 'Please enter a valid, non-disposable email address.'
+      };
+    }
+
+    const cleanEmail = newEmail.trim().toLowerCase();
+    if (this.user && this.user.email === cleanEmail) {
+      return { success: true, message: 'Email is already set to this address.' };
+    }
+
+    const supabase = this.getSupabase();
+    if (!supabase) {
+      return { success: false, error: 'Cloud service is initializing. Please try again.' };
+    }
+
+    try {
+      const { data, error } = await supabase.auth.updateUser({ email: cleanEmail });
+      if (error) throw error;
+
+      return {
+        success: true,
+        message: `A confirmation link has been sent to ${cleanEmail}. Please check your inbox and confirm the link to finalize your new email address.`
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message || 'Failed to update email address.'
+      };
+    }
+  }
+
   subscribe(listener) {
     this.listeners.push(listener);
     return () => {
@@ -167,8 +235,27 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
+     Password Validation Policy (Compulsory 8-10 Alphanumeric)
+  ----------------------------------------------------- */
+
+  validatePassword(password) {
+    if (!password || typeof password !== 'string') {
+      return { valid: false, message: 'Password is required.' };
+    }
+    if (password.length < 8 || password.length > 10) {
+      return { valid: false, message: 'Password must be exactly 8 to 10 alphanumeric characters.' };
+    }
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const isAlphaNumeric = /^[a-zA-Z0-9]+$/.test(password);
+    if (!hasLetter || !hasNumber || !isAlphaNumeric) {
+      return { valid: false, message: 'Password must contain only letters and numbers (at least one letter and one number, no special symbols).' };
+    }
+    return { valid: true };
+  }
+
   /* ----------------------------------------------------
-     Trusted Email Providers & Security Rules
+     Trusted Email Providers & University Support
   ----------------------------------------------------- */
 
   isTrustedEmail(email) {
@@ -176,34 +263,26 @@ class AuthManager {
     const parts = email.trim().toLowerCase().split('@');
     if (parts.length !== 2) return false;
     const domain = parts[1].trim();
+    if (!domain || !domain.includes('.')) return false;
 
-    const TRUSTED_DOMAINS = [
-      // Google
-      'gmail.com', 'googlemail.com',
-      // Microsoft
-      'outlook.com', 'hotmail.com', 'live.com', 'msn.com', 'office365.com', 'outlook.in', 'hotmail.co.uk',
-      // Proton Mail
-      'proton.me', 'protonmail.com', 'pm.me',
-      // Yahoo Mail
-      'yahoo.com', 'ymail.com', 'myyahoo.com', 'yahoo.co.in', 'yahoo.co.uk', 'yahoo.ca', 'yahoo.com.au', 'yahoo.fr', 'yahoo.de', 'yahoo.es', 'yahoo.it', 'yahoo.com.br',
-      // Zoho Mail
-      'zohomail.com', 'zoho.com', 'zohomail.in', 'zoho.in', 'zohomail.eu', 'zoho.eu',
-      // Apple iCloud
-      'icloud.com', 'me.com', 'mac.com'
+    // Block known disposable/temporary email providers
+    const DISPOSABLE_DOMAINS = [
+      'tempmail.com', 'temp-mail.org', 'tempmail.net', 'mailinator.com', '10minutemail.com',
+      'guerrillamail.com', 'guerrillamail.net', 'guerrillamail.org', 'trashmail.com',
+      'sharklasers.com', 'yopmail.com', 'getairmail.com', 'dispostable.com', 'throwawaymail.com',
+      'burnermail.io', 'fakemailgenerator.com', 'inboxkitten.com', 'mohmal.com', 'crazymailing.com',
+      'mytemp.email', 'tempinbox.com', 'trashmail.net', 'throwawaymail.org'
     ];
 
-    if (TRUSTED_DOMAINS.includes(domain)) return true;
-
-    // Regional yahoo and zoho domain extensions
-    if (domain.startsWith('yahoo.') || domain.endsWith('.yahoo.com') || domain.startsWith('zoho.')) {
-      return true;
+    if (DISPOSABLE_DOMAINS.includes(domain) || domain.includes('tempmail') || domain.includes('disposable')) {
+      return false;
     }
 
-    return false;
+    return true;
   }
 
   /* ----------------------------------------------------
-     Login Rate Limiting & 1-Hour Lockout Manager
+     Login Rate Limiting & Lockout Manager
   ----------------------------------------------------- */
 
   getLockoutStatus(email) {
@@ -218,15 +297,22 @@ class AuthManager {
       const ONE_HOUR = 60 * 60 * 1000;
 
       // If locked, check if 1 hour has elapsed
-      if (item.lockedUntil && now < item.lockedUntil) {
-        const remainingMs = item.lockedUntil - now;
-        const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
-        return {
-          isLocked: true,
-          lockedUntil: item.lockedUntil,
-          remainingMinutes,
-          remainingAttempts: 0
-        };
+      if (item.lockedUntil) {
+        if (now < item.lockedUntil) {
+          const remainingMs = item.lockedUntil - now;
+          const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+          return {
+            isLocked: true,
+            lockedUntil: item.lockedUntil,
+            remainingMinutes,
+            remainingAttempts: 0
+          };
+        } else {
+          // Lock expired -> reset
+          delete records[key];
+          localStorage.setItem('classtrack_login_rate_limits', JSON.stringify(records));
+          return { isLocked: false, remainingAttempts: 5 };
+        }
       }
 
       // If window passed (> 1 hour since first attempt), reset
@@ -257,7 +343,7 @@ class AuthManager {
       const ONE_HOUR = 60 * 60 * 1000;
 
       let item = records[key];
-      if (!item || (item.firstAttempt && (now - item.firstAttempt) > ONE_HOUR && !item.lockedUntil)) {
+      if (!item || (item.lockedUntil && now >= item.lockedUntil) || (item.firstAttempt && (now - item.firstAttempt) > ONE_HOUR)) {
         item = { attempts: 0, firstAttempt: now, lockedUntil: null };
       }
 
@@ -301,7 +387,7 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
-     Sign Up (With Trusted Email Enforcement)
+     Sign Up (Compulsory 8-10 Alphanumeric Password)
   ----------------------------------------------------- */
 
   async signUp({ fullName, universityId = '', branch = '', program = '', semester = '', email, password, phone = '' }) {
@@ -309,13 +395,19 @@ class AuthManager {
       return { success: false, error: 'Please fill in all required fields (Name, Email, Password).' };
     }
 
+    // Validate 8-10 alphanumeric password
+    const passCheck = this.validatePassword(password);
+    if (!passCheck.valid) {
+      return { success: false, error: passCheck.message };
+    }
+
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Enforce trusted email providers & reject disposable/temporary emails
+    // Enforce trusted email providers & reject disposable emails
     if (!this.isTrustedEmail(cleanEmail)) {
       return {
         success: false,
-        error: 'Temporary, disposable, or unverified emails are not permitted. Please use a trusted provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud).'
+        error: 'Temporary or disposable emails are not permitted. Please use a valid email provider or your university email.'
       };
     }
 
@@ -330,6 +422,8 @@ class AuthManager {
     }
 
     try {
+      const sessionToken = this.generateSessionToken();
+
       const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password: password,
@@ -361,7 +455,6 @@ class AuthManager {
         return { success: false, error: error.message };
       }
 
-      // In some Supabase configs with email confirmations, duplicate users return empty identities array
       if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
         return {
           success: false,
@@ -386,7 +479,7 @@ class AuthManager {
         if (data.session) {
           this.setSessionData(data.session);
 
-          // Sync initial profile
+          // Sync initial profile and active session token to cloud
           if (window.EduTrackState) {
             window.EduTrackState.updateProfile({
               name: userObj.fullName,
@@ -405,7 +498,8 @@ class AuthManager {
               program: userObj.branch,
               semester: userObj.semester,
               email: userObj.email,
-              phone: userObj.phone
+              phone: userObj.phone,
+              activeSessionToken: sessionToken
             });
           }
 
@@ -425,7 +519,7 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
-     Sign In (With Trusted Provider & 5-Attempt Lockout)
+     Sign In (Enforcing 8-10 Alphanumeric Password & Single Server Session)
   ----------------------------------------------------- */
 
   async login(email, password) {
@@ -433,17 +527,22 @@ class AuthManager {
       return { success: false, error: 'Please enter your email and password.' };
     }
 
+    // Validate 8-10 alphanumeric password
+    const passCheck = this.validatePassword(password);
+    if (!passCheck.valid) {
+      return { success: false, error: passCheck.message };
+    }
+
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Enforce trusted email providers
     if (!this.isTrustedEmail(cleanEmail)) {
       return {
         success: false,
-        error: 'Temporary, disposable, or unverified emails are not permitted. Please sign in with a trusted provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud).'
+        error: 'Temporary or disposable emails are not permitted. Please sign in with your registered email.'
       };
     }
 
-    // 2. Check 5 failed attempts per hour lockout
+    // Check 5 failed attempts lockout
     const lockout = this.getLockoutStatus(cleanEmail);
     if (lockout.isLocked) {
       return {
@@ -466,7 +565,6 @@ class AuthManager {
       });
 
       if (error) {
-        // Record failed attempt and compute remaining attempts
         const updatedLock = this.recordFailedLogin(cleanEmail);
         if (updatedLock.isLocked) {
           return {
@@ -485,10 +583,22 @@ class AuthManager {
       }
 
       if (data?.session && data?.user) {
-        // Clear rate limit tracking on successful login
         this.clearLoginAttempts(cleanEmail);
 
+        // Generate and record unique active session token on server for single session enforcement
+        const sessionToken = this.generateSessionToken();
+
         this.setSessionData(data.session);
+
+        // Update server profile with new active session token
+        if (supabase) {
+          try {
+            await supabase.from('profiles').update({
+              active_session_token: sessionToken,
+              updated_at: new Date().toISOString()
+            }).eq('id', data.user.id);
+          } catch (e) {}
+        }
 
         // Fetch live database records from cloud database
         if (window.ClassTrackSync) {
@@ -513,11 +623,10 @@ class AuthManager {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Enforce trusted email providers
     if (!this.isTrustedEmail(cleanEmail)) {
       return {
         success: false,
-        error: 'Temporary, disposable, or unverified emails are not permitted. Please use a trusted provider (Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud).'
+        error: 'Temporary or disposable emails are not permitted.'
       };
     }
 
@@ -527,8 +636,9 @@ class AuthManager {
     }
 
     try {
+      const redirectUrl = window.location.origin + window.location.pathname + '#reset-password';
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: window.location.origin + window.location.pathname + '#reset-password'
+        redirectTo: redirectUrl
       });
 
       if (error) {
@@ -545,8 +655,9 @@ class AuthManager {
   }
 
   async resetPassword(newPassword) {
-    if (!newPassword || newPassword.length < 6) {
-      return { success: false, error: 'Password must be at least 6 characters long.' };
+    const passCheck = this.validatePassword(newPassword);
+    if (!passCheck.valid) {
+      return { success: false, error: passCheck.message };
     }
 
     const supabase = this.getSupabase();
@@ -559,7 +670,7 @@ class AuthManager {
       if (error) {
         return { success: false, error: error.message };
       }
-      return { success: true, message: 'Password updated successfully! You can now log in.' };
+      return { success: true, message: 'Password updated successfully! You can now log in with your new password.' };
     } catch (err) {
       return { success: false, error: err.message };
     }
@@ -580,8 +691,10 @@ class AuthManager {
     }
     this.session = null;
     this.user = null;
+    this.sessionToken = '';
     try {
       localStorage.removeItem('classtrack_auth_user');
+      localStorage.removeItem('classtrack_active_session_token');
       localStorage.removeItem('classtrack_state_cache');
     } catch (e) {}
     if (window.EduTrackState) {

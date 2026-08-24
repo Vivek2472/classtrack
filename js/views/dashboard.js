@@ -334,31 +334,37 @@ window.ClassTrackDashboard = {
                         </div>
                       </div>
                     ` : `
-                      <div class="text-center mt-2">
+                    <div class="text-center mt-2">
                         <button class="btn btn-secondary btn-sm" onclick="window.ClassTrackApp.openAddSlotModal()">
                           <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add ${todayName} Class
                         </button>
                       </div>
                     `}
                   ` : todayClasses.map(slot => {
+                    const esc = str => (window.ClassTrackApp ? window.ClassTrackApp.escapeHTML(str) : (str || ''));
                     const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Engineering Subject', code: 'ENG', instructor: 'Faculty' };
-                    const isLogged = (state.logs || []).find(l => l.subjectId === slot.subjectId && l.date === new Date().toISOString().split('T')[0]);
+                    const todayDateStr = window.EduTrackState.getLocalDateString();
+                    const isLogged = (state.logs || []).find(l => 
+                      l.subjectId === slot.subjectId && 
+                      l.date === todayDateStr && 
+                      ((l.slotId && l.slotId === slot.id) || (l.timeStr && l.timeStr === slot.timeStr) || (!l.slotId && !l.timeStr))
+                    );
 
                     return `
                       <div style="border: 1px solid var(--color-surface-variant); border-radius: 12px; padding: 14px; background-color: var(--color-surface); ${isLogged ? 'opacity: 0.95;' : ''}" class="flex flex-col gap-2.5 transition-all hover:border-slate-400">
                         <div class="flex justify-between items-start">
                           <div>
                             <span class="font-label-sm block uppercase tracking-wider font-mono font-bold" style="color: var(--color-primary);">
-                              ${slot.timeStr}
+                              ${esc(slot.timeStr)}
                             </span>
                             <h4 class="font-body-md font-semibold mt-0.5" style="color: var(--color-on-background); cursor: pointer;" onclick="window.ClassTrackApp.showSubjectDetail('${slot.subjectId}')">
-                              ${subject.name}
+                              ${esc(subject.name)}
                             </h4>
                             <p class="font-label-sm flex items-center gap-1 mt-1" style="color: var(--color-on-surface-variant);">
-                              <span class="material-symbols-outlined" style="font-size: 14px;">location_on</span> ${slot.room || 'TBA'}
-                              ${subject.code ? `<span class="mx-1">•</span><span>${subject.code}</span>` : ''}
+                              <span class="material-symbols-outlined" style="font-size: 14px;">location_on</span> ${esc(slot.room || 'TBA')}
+                              ${subject.code ? `<span class="mx-1">•</span><span>${esc(subject.code)}</span>` : ''}
                               <span class="mx-1">•</span>
-                              <span class="material-symbols-outlined" style="font-size: 14px;">person</span> <span>${subject.instructor || 'Faculty'}</span>
+                              <span class="material-symbols-outlined" style="font-size: 14px;">person</span> <span>${esc(subject.instructor || 'Faculty')}</span>
                             </p>
                           </div>
                         </div>
@@ -384,20 +390,20 @@ window.ClassTrackDashboard = {
                             </button>
                           </div>
                           ${isLogged.remarks ? `
-                            <p class="font-label-sm text-xs opacity-75 italic mt-0.5" style="color: var(--color-on-surface-variant);">${isLogged.remarks}</p>
+                            <p class="font-label-sm text-xs opacity-75 italic mt-0.5" style="color: var(--color-on-surface-variant);">${esc(isLogged.remarks)}</p>
                           ` : ''}
                         ` : `
                           <div class="flex flex-col gap-1.5 mt-1 pt-2 border-t" style="border-color: var(--color-outline-variant);">
                             <div class="flex gap-2">
-                              <button class="btn btn-safe flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'present', '${slot.timeStr}')">
+                              <button class="btn btn-safe flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'present', '${slot.timeStr}', '${slot.id}')">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Present
                               </button>
-                              <button class="btn btn-danger flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'absent', '${slot.timeStr}')">
+                              <button class="btn btn-danger flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'absent', '${slot.timeStr}', '${slot.id}')">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Absent
                               </button>
                             </div>
                             <div class="flex gap-2">
-                              <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; background-color: var(--color-surface-container-high); color: var(--color-on-surface);" title="Faculty is on leave or class cancelled (free period - does not penalize attendance)" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'faculty_absent', '${slot.timeStr}')">
+                              <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; background-color: var(--color-surface-container-high); color: var(--color-on-surface);" title="Faculty is on leave or class cancelled (free period - does not penalize attendance)" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'faculty_absent', '${slot.timeStr}', '${slot.id}')">
                                 <span class="material-symbols-outlined" style="font-size: 14px;">person_off</span> Faculty Absent
                               </button>
                               <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; border-color: rgba(124, 58, 237, 0.4); color: #7C3AED;" title="Record class taken by substitute/proxy faculty" onclick="window.ClassTrackApp.openSubstituteModal('${slot.subjectId}', '${slot.timeStr}')">
@@ -432,13 +438,14 @@ window.ClassTrackDashboard = {
     }
   },
 
-  quickLog(subjectId, status, timeStr) {
+  quickLog(subjectId, status, timeStr, slotId) {
     const subject = window.EduTrackState.getState().subjects.find(s => s.id === subjectId);
     let remarks = 'Quick logged from Dashboard';
     if (status === 'faculty_absent') remarks = 'Faculty Absent / Free Period';
 
     window.EduTrackState.logAttendance(subjectId, status, {
       timeStr,
+      slotId: slotId || '',
       type: subject?.type === 'lab' ? 'Lab' : 'Lecture',
       remarks
     });

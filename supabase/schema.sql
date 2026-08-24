@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   strict_threshold INTEGER DEFAULT 80,
   dark_mode BOOLEAN DEFAULT FALSE,
   timetable_mode TEXT DEFAULT 'personal',
+  active_session_token TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -196,6 +197,10 @@ BEGIN
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
     full_name = EXCLUDED.full_name,
+    roll_no = COALESCE(EXCLUDED.roll_no, public.profiles.roll_no),
+    program = COALESCE(EXCLUDED.program, public.profiles.program),
+    semester = COALESCE(EXCLUDED.semester, public.profiles.semester),
+    phone = COALESCE(EXCLUDED.phone, public.profiles.phone),
     updated_at = timezone('utc'::text, now());
 
   RETURN NEW;

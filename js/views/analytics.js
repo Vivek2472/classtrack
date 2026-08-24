@@ -11,7 +11,7 @@ window.EduTrackAnalytics = {
     const state = stateManager.getState();
     const overallStats = stateManager.getOverallStats();
     const typeStats = stateManager.getTypeStats();
-    const subjects = (state.subjects || []).map(s => stateManager.getSubjectStats(s.id));
+    const subjects = (state.subjects || []).map(s => stateManager.getSubjectStats(s.id)).filter(Boolean);
 
     if (subjects.length === 0) {
       container.innerHTML = `
@@ -357,15 +357,19 @@ window.EduTrackAnalytics = {
     ];
 
     if (logs.length >= 4) {
-      const chunkSize = Math.ceil(logs.length / 4);
+      // Sort chronologically (oldest to newest)
+      const chronologicalLogs = [...logs].reverse();
+      const chunkSize = Math.ceil(chronologicalLogs.length / 4);
       for (let i = 0; i < 4; i++) {
-        const slice = logs.slice(Math.max(0, logs.length - (4 - i) * chunkSize));
+        const slice = chronologicalLogs.slice(0, Math.min(chronologicalLogs.length, (i + 1) * chunkSize));
         const attended = slice.filter(l => l.status === 'present' || l.status === 'od' || l.status === 'other_faculty').length;
         const total = slice.filter(l => l.status !== 'holiday' && l.status !== 'faculty_absent').length;
         const pct = total > 0 ? parseFloat(((attended / total) * 100).toFixed(1)) : currPct;
         pts[i].pct = pct;
         pts[i].y = 160 - (pct / 100 * 160);
       }
+      pts[3].pct = currPct;
+      pts[3].y = 160 - (currPct / 100 * 160);
     }
 
     const d = `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y} L ${pts[2].x} ${pts[2].y} L ${pts[3].x} ${pts[3].y}`;
@@ -387,17 +391,36 @@ window.EduTrackAnalytics = {
     const state = window.EduTrackState.getState();
     const logs = state.logs || [];
     const cells = [];
-    const daysTotal = 14 * 5; // 70 days for clean responsive fit
+    const daysTotal = 70;
+    const now = new Date();
 
-    for (let i = 0; i < daysTotal; i++) {
+    const dateMap = {};
+    logs.forEach(l => {
+      if (l.date) {
+        if (!dateMap[l.date]) dateMap[l.date] = [];
+        dateMap[l.date].push(l);
+      }
+    });
+
+    for (let i = daysTotal - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dateStr = window.EduTrackState.getLocalDateString(d);
+      const dayLogs = dateMap[dateStr] || [];
+
       let level = 'level-0';
-      if (i < logs.length) {
-        const log = logs[i];
-        if (log.status === 'present' || log.status === 'od' || log.status === 'other_faculty') level = 'level-2';
-        else if (log.status === 'absent') level = 'level-absent';
+      if (dayLogs.length > 0) {
+        const hasPresent = dayLogs.some(l => l.status === 'present' || l.status === 'od' || l.status === 'other_faculty');
+        const hasAbsent = dayLogs.some(l => l.status === 'absent');
+        if (hasPresent && !hasAbsent) level = 'level-2';
+        else if (hasPresent && hasAbsent) level = 'level-1';
+        else if (hasAbsent) level = 'level-absent';
         else level = 'level-holiday';
       }
-      cells.push(`<div class="heatmap-cell ${level}" title="Day ${i + 1}"></div>`);
+
+      const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const title = dayLogs.length > 0 ? `${formatted}: ${dayLogs.length} session(s)` : `${formatted}: No classes recorded`;
+      cells.push(`<div class="heatmap-cell ${level}" title="${title}"></div>`);
     }
 
     return cells.join('');
@@ -414,14 +437,16 @@ window.EduTrackAnalytics = {
 
     (state.subjects || []).forEach(s => {
       const stats = window.EduTrackState.getSubjectStats(s.id);
-      csv += `"${stats.code}","${stats.name}","${stats.type}",${stats.credits},${stats.total},${stats.attended},${stats.missed},${stats.percentage}%,"${stats.status}"\n`;
+      if (stats) {
+        csv += `"${stats.code || ''}","${stats.name || ''}","${stats.type || 'theory'}",${stats.credits || 3},${stats.total || 0},${stats.attended || 0},${stats.missed || 0},${stats.percentage || 0}%,"${stats.status || 'safe'}"\n`;
+      }
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `ClassTrack_Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `ClassTrack_Attendance_Report_${window.EduTrackState.getLocalDateString()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

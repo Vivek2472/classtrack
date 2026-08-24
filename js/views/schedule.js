@@ -13,11 +13,11 @@ window.ClassTrackSchedule = {
   hours: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
 
   getAcademicDateForDay(dayName) {
-    const dayIndices = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 0 };
+    const dayIndices = { 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6, 'Sunday': 7 };
     const targetDayIdx = dayIndices[dayName] !== undefined ? dayIndices[dayName] : 1;
     const now = new Date();
-    const currentDayIdx = now.getDay(); // 0 is Sun, 1 is Mon
-    const diffToMonday = currentDayIdx === 0 ? -6 : 1 - currentDayIdx;
+    const currentDayIdx = now.getDay() === 0 ? 7 : now.getDay(); // 1=Mon, ..., 7=Sun
+    const diffToMonday = 1 - currentDayIdx;
     const monday = new Date(now);
     monday.setDate(now.getDate() + diffToMonday);
     
@@ -416,12 +416,15 @@ window.ClassTrackSchedule = {
     const cells = [];
 
     // Prev month padding
+    const prevMonthDate = new Date(year, this.calendarMonth - 1, 1);
+    const prevYear = prevMonthDate.getFullYear();
+    const prevMonth = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
       const prevDateNum = daysInPrevMonth - i;
       cells.push({
         dateNum: prevDateNum,
         isOtherMonth: true,
-        fullDateStr: `${year}-${String(this.calendarMonth).padStart(2, '0')}-${String(prevDateNum).padStart(2, '0')}`
+        fullDateStr: `${prevYear}-${prevMonth}-${String(prevDateNum).padStart(2, '0')}`
       });
     }
 
@@ -447,12 +450,15 @@ window.ClassTrackSchedule = {
     }
 
     // Next month padding
+    const nextMonthDate = new Date(year, this.calendarMonth + 1, 1);
+    const nextYear = nextMonthDate.getFullYear();
+    const nextMonth = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
     const remainingCells = (7 - (cells.length % 7)) % 7;
     for (let n = 1; n <= remainingCells; n++) {
       cells.push({
         dateNum: n,
         isOtherMonth: true,
-        fullDateStr: `${year}-${String(this.calendarMonth + 2).padStart(2, '0')}-${String(n).padStart(2, '0')}`
+        fullDateStr: `${nextYear}-${nextMonth}-${String(n).padStart(2, '0')}`
       });
     }
 
@@ -743,7 +749,7 @@ window.ClassTrackSchedule = {
                   <button class="btn-icon hover:bg-slate-200 dark:hover:bg-slate-800" title="Edit slot" onclick="window.ClassTrackApp.openEditSlotModal('${slot.id}')">
                     <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
                   </button>
-                  <button class="btn-icon text-error hover:bg-red-50 dark:hover:bg-red-950/40" title="Delete slot" onclick="window.ClassTrackSchedule.confirmDeleteSlot('${slot.id}', '${subject.name.replace(/'/g, "\\'")}', '${slot.day}', '${slot.timeStr}'); window.ClassTrackSchedule.openManageSlotsModal();">
+                  <button class="btn-icon text-error hover:bg-red-50 dark:hover:bg-red-950/40" title="Delete slot" onclick="window.ClassTrackSchedule.confirmDeleteSlot('${slot.id}', '${subject.name.replace(/'/g, "\\'")}', '${slot.day}', '${slot.timeStr}');">
                     <span class="material-symbols-outlined" style="font-size: 18px; color: var(--color-error);">delete</span>
                   </button>
                 </div>
