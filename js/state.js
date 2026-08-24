@@ -379,6 +379,10 @@ class StateManager {
     };
 
     this.state.logs.unshift(newLog);
+    this.state.logs.sort((a, b) => {
+      if (a.date === b.date) return (b.id || '').localeCompare(a.id || '');
+      return (b.date || '').localeCompare(a.date || '');
+    });
     this.saveState();
 
     if (window.ClassTrackSync) {

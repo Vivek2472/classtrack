@@ -214,11 +214,17 @@ window.ClassTrackSubjectDetail = {
     const state = stateManager.getState();
     const target = state.profile?.targetThreshold || 75;
 
-    // Filter logs for this subject
+    // Filter logs for this subject & sort in descending order (newest dates first)
     let subjectLogs = (state.logs || []).filter(l => l.subjectId === this.currentSubjectId);
     if (this.historyFilter !== 'all') {
       subjectLogs = subjectLogs.filter(l => l.status === this.historyFilter);
     }
+    subjectLogs.sort((a, b) => {
+      if (a.date === b.date) {
+        return (b.id || '').localeCompare(a.id || '');
+      }
+      return (b.date || '').localeCompare(a.date || '');
+    });
 
     const isSafe = stats.percentage >= target;
 

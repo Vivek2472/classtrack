@@ -254,21 +254,52 @@ window.ClassTrackSchedule = {
                   </p>
                 </div>
 
-                <!-- Bottom Row: Quick 1-Click Attendance Buttons -->
-                <div class="pt-2 border-t flex flex-wrap items-center gap-1.5" style="border-color: var(--color-outline-variant);">
-                  <button class="btn btn-safe btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.quickLog('${slot.subjectId}', 'present', '${slot.timeStr}')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span> Present
-                  </button>
-                  <button class="btn btn-danger btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.quickLog('${slot.subjectId}', 'absent', '${slot.timeStr}')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">cancel</span> Absent
-                  </button>
-                  <button class="btn btn-secondary btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem;" title="Faculty on leave" onclick="window.ClassTrackSchedule.quickLog('${slot.subjectId}', 'faculty_absent', '${slot.timeStr}')">
-                    <span class="material-symbols-outlined" style="font-size: 15px;">person_off</span> Free
-                  </button>
-                  <button class="btn btn-secondary btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem; border-color: rgba(124, 58, 237, 0.4); color: #7C3AED;" title="Substitute faculty" onclick="window.ClassTrackApp.openSubstituteModal('${slot.subjectId}', '${slot.timeStr}')">
-                    <span class="material-symbols-outlined" style="font-size: 15px; color: #7C3AED;">swap_horiz</span> Proxy
-                  </button>
-                </div>
+                <!-- Bottom Row: Status Reflection or Initial 1-Click Buttons -->
+                ${(() => {
+                  const now = new Date();
+                  const currentDayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+                  const todayDateStr = window.EduTrackState.getLocalDateString();
+                  const isTodaySelected = this.selectedDay === currentDayName;
+                  const isLogged = isTodaySelected ? (state.logs || []).find(l => l.subjectId === slot.subjectId && l.date === todayDateStr) : null;
+
+                  if (isLogged) {
+                    return `
+                      <div class="pt-2 border-t flex items-center justify-between" style="border-color: var(--color-outline-variant);">
+                        <span class="font-label-sm text-xs" style="color: var(--color-on-surface-variant);">Attendance Status:</span>
+                        <span class="status-chip ${isLogged.status === 'present' ? 'status-safe' : isLogged.status === 'absent' ? 'status-critical' : isLogged.status === 'faculty_absent' ? 'status-warning' : isLogged.status === 'other_faculty' ? 'status-substitute' : 'status-neutral'}">
+                          <span class="material-symbols-outlined" style="font-size: 14px;">${isLogged.status === 'present' ? 'check_circle' : isLogged.status === 'absent' ? 'cancel' : isLogged.status === 'faculty_absent' ? 'person_off' : 'verified'}</span>
+                          ${isLogged.status === 'present' ? 'PRESENT (ATTENDED)' : isLogged.status === 'absent' ? 'ABSENT (MISSED)' : isLogged.status === 'faculty_absent' ? 'FACULTY ABSENT (FREE)' : isLogged.status === 'other_faculty' ? 'SUBSTITUTE' : isLogged.status.toUpperCase()}
+                        </span>
+                      </div>
+                    `;
+                  }
+
+                  if (isTodaySelected) {
+                    return `
+                      <div class="pt-2 border-t flex flex-wrap items-center gap-1.5" style="border-color: var(--color-outline-variant);">
+                        <button class="btn btn-safe btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.quickLog('${slot.subjectId}', 'present', '${slot.timeStr || slot.time}')">
+                          <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span> Present
+                        </button>
+                        <button class="btn btn-danger btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.quickLog('${slot.subjectId}', 'absent', '${slot.timeStr || slot.time}')">
+                          <span class="material-symbols-outlined" style="font-size: 15px;">cancel</span> Absent
+                        </button>
+                        <button class="btn btn-secondary btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem;" title="Faculty on leave" onclick="window.ClassTrackSchedule.quickLog('${slot.subjectId}', 'faculty_absent', '${slot.timeStr || slot.time}')">
+                          <span class="material-symbols-outlined" style="font-size: 15px;">person_off</span> Free
+                        </button>
+                        <button class="btn btn-secondary btn-sm flex-1" style="padding: 5px 8px; font-size: 0.75rem; border-color: rgba(124, 58, 237, 0.4); color: #7C3AED;" title="Substitute faculty" onclick="window.ClassTrackApp.openSubstituteModal('${slot.subjectId}', '${slot.timeStr || slot.time}')">
+                          <span class="material-symbols-outlined" style="font-size: 15px; color: #7C3AED;">swap_horiz</span> Proxy
+                        </button>
+                      </div>
+                    `;
+                  }
+
+                  return `
+                    <div class="pt-2 border-t flex items-center justify-between text-xs font-label-sm" style="border-color: var(--color-outline-variant); color: var(--color-on-surface-variant);">
+                      <span>Scheduled Timetable Session</span>
+                      <span class="status-chip status-neutral text-xs">Active Slot</span>
+                    </div>
+                  `;
+                })()}
               </div>
             `;
     }).join('')}
@@ -643,14 +674,10 @@ window.ClassTrackSchedule = {
                   </div>
                   <div>
                     ${logged ? `
-                      <div class="flex items-center gap-2">
-                        <span class="status-chip ${logged.status === 'present' ? 'status-safe' : logged.status === 'absent' ? 'status-critical' : logged.status === 'faculty_absent' ? 'status-warning' : 'status-neutral'} uppercase">${logged.status === 'present' ? 'PRESENT' : logged.status === 'absent' ? 'ABSENT' : logged.status.toUpperCase()}</span>
-                        ${!isFuture ? `
-                          <button class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.72rem;" title="Switch status" onclick="window.ClassTrackSchedule.logForDate('${slot.subjectId}', '${logged.status === 'present' ? 'absent' : 'present'}', '${dateStr}', '${slot.timeStr || slot.time}')">
-                            Switch to ${logged.status === 'present' ? 'Absent' : 'Present'}
-                          </button>
-                        ` : ''}
-                      </div>
+                      <span class="status-chip ${logged.status === 'present' ? 'status-safe' : logged.status === 'absent' ? 'status-critical' : logged.status === 'faculty_absent' ? 'status-warning' : logged.status === 'other_faculty' ? 'status-substitute' : 'status-neutral'} uppercase">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">${logged.status === 'present' ? 'check_circle' : logged.status === 'absent' ? 'cancel' : logged.status === 'faculty_absent' ? 'person_off' : 'verified'}</span>
+                        ${logged.status === 'present' ? 'PRESENT' : logged.status === 'absent' ? 'ABSENT' : logged.status === 'faculty_absent' ? 'FACULTY ABSENT' : logged.status.toUpperCase()}
+                      </span>
                     ` : isFuture ? `
                       <span class="status-chip status-neutral text-xs">Upcoming</span>
                     ` : `
