@@ -20,7 +20,7 @@ window.ClassTrackSchedule = {
     const diffToMonday = 1 - currentDayIdx;
     const monday = new Date(now);
     monday.setDate(now.getDate() + diffToMonday);
-    
+
     const targetDate = new Date(monday);
     targetDate.setDate(monday.getDate() + (targetDayIdx - 1));
 
@@ -97,7 +97,7 @@ window.ClassTrackSchedule = {
 
             <!-- Add Timetable Slot -->
             <button class="btn btn-primary btn-sm" onclick="window.ClassTrackSchedule.openAddSlotModal()">
-              <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add Slot
+              <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add Schedule
             </button>
           </div>
         </div>
@@ -115,12 +115,12 @@ window.ClassTrackSchedule = {
         <div class="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar" style="-webkit-overflow-scrolling: touch;">
           <div class="flex items-center gap-1.5 min-w-max">
             ${this.days.map(day => {
-              const acad = this.getAcademicDateForDay(day);
-              const isToday = day === todayName;
-              const isSelected = day === this.selectedDay;
-              const slotCount = (state.schedule || []).filter(s => s.day === day).length;
+      const acad = this.getAcademicDateForDay(day);
+      const isToday = day === todayName;
+      const isSelected = day === this.selectedDay;
+      const slotCount = (state.schedule || []).filter(s => s.day === day).length;
 
-              return `
+      return `
                 <button 
                   class="flex flex-col items-center justify-center px-3.5 py-2 rounded-xl transition-all font-mono text-center ${isSelected ? 'shadow-sm' : 'hover:bg-slate-200/60 dark:hover:bg-slate-800/60'}" 
                   style="
@@ -136,7 +136,7 @@ window.ClassTrackSchedule = {
                   ${isToday ? `<span class="text-[9px] font-extrabold uppercase mt-0.5 ${isSelected ? 'text-amber-200' : 'text-primary'}">• TODAY</span>` : `<span class="text-[9px] opacity-60 mt-0.5">${slotCount} cls</span>`}
                 </button>
               `;
-            }).join('')}
+    }).join('')}
           </div>
 
           <!-- View Mode Toggle: Day Stream vs Full Matrix -->
@@ -209,12 +209,12 @@ window.ClassTrackSchedule = {
 
         <div class="flex flex-col gap-3">
           ${daySlots.map(slot => {
-            const subject = stateManager.getSubjectStats(slot.subjectId) || { name: 'Subject', code: 'ENG', percentage: 0, instructor: 'Faculty' };
-            const typeLabel = subject.type === 'lab' ? 'Lab' : subject.type === 'tutorial' ? 'Tutorial' : 'Theory';
-            const typeChipClass = subject.type === 'lab' ? 'status-warning' : subject.type === 'tutorial' ? 'status-substitute' : 'status-safe';
-            const durationFormatted = window.ClassTrackApp.formatDurationHuman(slot.duration, 'hours');
+      const subject = stateManager.getSubjectStats(slot.subjectId) || { name: 'Subject', code: 'ENG', percentage: 0, instructor: 'Faculty' };
+      const typeLabel = subject.type === 'lab' ? 'Lab' : subject.type === 'tutorial' ? 'Tutorial' : 'Theory';
+      const typeChipClass = subject.type === 'lab' ? 'status-warning' : subject.type === 'tutorial' ? 'status-substitute' : 'status-safe';
+      const durationFormatted = window.ClassTrackApp.formatDurationHuman(slot.duration, 'hours');
 
-            return `
+      return `
               <div class="edu-card p-4 flex flex-col gap-3 transition-all hover:border-slate-400">
                 <!-- Top Row: Time Range, Duration, Subject Category -->
                 <div class="flex items-center justify-between pb-2 border-b" style="border-color: var(--color-outline-variant);">
@@ -271,7 +271,7 @@ window.ClassTrackSchedule = {
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
     `;
@@ -315,40 +315,40 @@ window.ClassTrackSchedule = {
               <!-- Header Row with DAY DD:MONTH:YY -->
               <div class="grid-header" style="color: var(--color-on-surface-variant);">Time</div>
               ${this.days.map(day => {
-                const acad = this.getAcademicDateForDay(day);
-                const isToday = day === todayName;
-                return `
+      const acad = this.getAcademicDateForDay(day);
+      const isToday = day === todayName;
+      return `
                   <div class="grid-header ${isToday ? 'today' : ''} flex-col py-2">
                     <span class="font-bold font-mono">${acad.dayUpper.slice(0, 3)}</span>
                     <span class="font-mono text-xs opacity-80">${acad.formattedDate}</span>
                   </div>
                 `;
-              }).join('')}
+    }).join('')}
 
               <!-- Time Slot Rows -->
               ${this.hours.map((hour) => {
-                const hourInt = parseInt(hour.split(':')[0], 10);
-                const isCurrentHour = hourInt === currentHour;
+      const hourInt = parseInt(hour.split(':')[0], 10);
+      const isCurrentHour = hourInt === currentHour;
 
-                return `
+      return `
                   <!-- Time Label -->
                   <div class="time-label ${isCurrentHour ? 'font-bold text-primary' : ''}">${hour}</div>
 
                   <!-- Day Cells for this hour -->
                   ${this.days.map(day => {
-                    const acad = this.getAcademicDateForDay(day);
-                    const isToday = day === todayName;
-                    const showTimeLine = isToday && isCurrentHour;
-                    const lineOffsetTop = showTimeLine ? Math.round((currentMinute / 60) * 65) : 0;
+        const acad = this.getAcademicDateForDay(day);
+        const isToday = day === todayName;
+        const showTimeLine = isToday && isCurrentHour;
+        const lineOffsetTop = showTimeLine ? Math.round((currentMinute / 60) * 65) : 0;
 
-                    // Find slots starting at this exact hour on this day
-                    const matchingSlots = (state.schedule || []).filter(s => {
-                      if (s.day !== day) return false;
-                      const sHour = parseInt(s.time.split(':')[0], 10);
-                      return sHour === hourInt;
-                    });
+        // Find slots starting at this exact hour on this day
+        const matchingSlots = (state.schedule || []).filter(s => {
+          if (s.day !== day) return false;
+          const sHour = parseInt(s.time.split(':')[0], 10);
+          return sHour === hourInt;
+        });
 
-                    return `
+        return `
                       <div class="grid-cell ${isToday ? 'bg-slate-50/40 dark:bg-slate-900/30' : ''}">
                         
                         ${showTimeLine ? `
@@ -356,15 +356,15 @@ window.ClassTrackSchedule = {
                         ` : ''}
 
                         ${matchingSlots.map(slot => {
-                          const subject = stateManager.getSubjectStats(slot.subjectId) || { name: 'Subject', code: 'ENG', percentage: 0, instructor: 'Instructor' };
-                          const typeClass = subject.type === 'lab' ? 'course-lab' : subject.type === 'tutorial' ? 'course-tutorial' : 'course-theory';
-                          
-                          // Calculate height spanning multi-hours
-                          const duration = slot.duration || 1;
-                          const heightStyle = duration > 1 ? `height: calc(${duration * 100}% + ${(duration - 1)}px); z-index: 15;` : '';
-                          const formattedSlotHeader = `${acad.shortHeader} ${slot.timeStr || slot.time}`;
+          const subject = stateManager.getSubjectStats(slot.subjectId) || { name: 'Subject', code: 'ENG', percentage: 0, instructor: 'Instructor' };
+          const typeClass = subject.type === 'lab' ? 'course-lab' : subject.type === 'tutorial' ? 'course-tutorial' : 'course-theory';
 
-                          return `
+          // Calculate height spanning multi-hours
+          const duration = slot.duration || 1;
+          const heightStyle = duration > 1 ? `height: calc(${duration * 100}% + ${(duration - 1)}px); z-index: 15;` : '';
+          const formattedSlotHeader = `${acad.shortHeader} ${slot.timeStr || slot.time}`;
+
+          return `
                             <div class="course-block ${typeClass} group" style="${heightStyle}" onclick="window.ClassTrackApp.showSubjectDetail('${slot.subjectId}')">
                               
                               <!-- Quick Action Buttons on Top Right -->
@@ -384,12 +384,12 @@ window.ClassTrackSchedule = {
                               </div>
                             </div>
                           `;
-                        }).join('')}
+        }).join('')}
                       </div>
                     `;
-                  }).join('')}
+      }).join('')}
                 `;
-              }).join('')}
+    }).join('')}
 
             </div>
           </div>
@@ -494,15 +494,15 @@ window.ClassTrackSchedule = {
 
           <!-- Day Cells -->
           ${cells.map(cell => {
-            if (cell.isOtherMonth) {
-              return `
+      if (cell.isOtherMonth) {
+        return `
                 <div class="calendar-day-cell other-month">
                   <span class="calendar-date-number opacity-40">${cell.dateNum}</span>
                 </div>
               `;
-            }
+      }
 
-            return `
+      return `
               <div class="calendar-day-cell ${cell.isToday ? 'today' : ''} cursor-pointer" onclick="window.ClassTrackSchedule.openDayDetailModal('${cell.fullDateStr}', '${cell.dayName}')">
                 <div class="flex justify-between items-center mb-1">
                   <span class="calendar-date-number ${cell.isToday ? 'text-primary font-extrabold' : ''}">${cell.dateNum}</span>
@@ -511,13 +511,13 @@ window.ClassTrackSchedule = {
 
                 <div class="flex flex-col gap-1 overflow-y-auto max-h-16">
                   ${(cell.daySlots || []).slice(0, 2).map(slot => {
-                    const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Class', code: 'CRS' };
-                    return `
+        const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Class', code: 'CRS' };
+        return `
                       <span class="calendar-class-pill" style="background-color: var(--color-surface-container-high); color: var(--color-on-surface);" title="${subject.name} • ${slot.timeStr}">
                         ${slot.time} ${subject.code || subject.name.substring(0, 6)}
                       </span>
                     `;
-                  }).join('')}
+      }).join('')}
                   ${(cell.daySlots || []).length > 2 ? `
                     <span class="font-label-sm text-[10px] opacity-70">+${cell.daySlots.length - 2} more</span>
                   ` : ''}
@@ -532,7 +532,7 @@ window.ClassTrackSchedule = {
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </div>
     `;
@@ -628,10 +628,10 @@ window.ClassTrackSchedule = {
             ${daySlots.length === 0 ? `
               <p class="font-body-sm py-2" style="color: var(--color-on-surface-variant);">No regular timetable classes scheduled for ${dayName}.</p>
             ` : daySlots.map(slot => {
-              const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Class', code: 'CRS' };
-              const logged = dateLogs.find(l => l.subjectId === slot.subjectId);
+      const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Class', code: 'CRS' };
+      const logged = dateLogs.find(l => l.subjectId === slot.subjectId);
 
-              return `
+      return `
                 <div class="p-3 rounded-xl mb-2 flex items-center justify-between border" style="background-color: var(--color-surface-container-low); border-color: var(--color-outline-variant);">
                   <div>
                     <span class="font-label-sm font-bold text-primary">${slot.timeStr || slot.time}</span>
@@ -650,7 +650,7 @@ window.ClassTrackSchedule = {
                   </div>
                 </div>
               `;
-            }).join('')}
+    }).join('')}
           </div>
 
           <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--color-outline-variant);">
@@ -732,10 +732,10 @@ window.ClassTrackSchedule = {
               </button>
             </div>
           ` : slots.map(slot => {
-            const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Subject', code: 'ENG' };
-            const acad = this.getAcademicDateForDay(slot.day);
+      const subject = state.subjects.find(s => s.id === slot.subjectId) || { name: 'Subject', code: 'ENG' };
+      const acad = this.getAcademicDateForDay(slot.day);
 
-            return `
+      return `
               <div class="p-3 rounded-xl flex items-center justify-between border" style="background-color: var(--color-surface); border-color: var(--color-outline-variant);">
                 <div>
                   <div class="flex items-center gap-2">
@@ -755,7 +755,7 @@ window.ClassTrackSchedule = {
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
 
         <div class="flex justify-between items-center pt-4 border-t mt-4" style="border-color: var(--color-outline-variant);">
