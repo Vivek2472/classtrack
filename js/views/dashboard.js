@@ -208,46 +208,54 @@ window.ClassTrackDashboard = {
                   <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color: var(--color-outline-variant);">
                     <div class="flex items-center gap-2" style="color: var(--color-secondary);">
                       <span class="material-symbols-outlined">${(this.upcomingFilter || 'all') === 'lab' ? 'science' : 'calendar_clock'}</span>
-                      <h3 class="font-headline-md" style="color: var(--color-on-background);">${(this.upcomingFilter || 'all') === 'lab' ? 'Upcoming Labs' : 'Upcoming Schedule'}</h3>
+                      <div>
+                        <h3 class="font-headline-md font-bold" style="color: var(--color-on-background);">${(this.upcomingFilter || 'all') === 'lab' ? 'Upcoming Labs' : 'Upcoming Schedule'}</h3>
+                      </div>
                     </div>
                     <div class="flex items-center gap-1">
                       <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'all' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('all')">All</button>
                       <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'lab' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('lab')">Labs Only</button>
+                      <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'theory' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('theory')">Theory</button>
                     </div>
                   </div>
 
-                  <div class="flex flex-col gap-3">
+                  <div class="flex flex-col gap-2.5 overflow-y-auto max-h-[380px] pr-1">
                     ${(() => {
+                      const esc = str => (window.ClassTrackApp ? window.ClassTrackApp.escapeHTML(str) : (str || ''));
                       const upcomingFilter = this.upcomingFilter || 'all';
-                      const upcomingSlots = stateManager.getUpcomingSchedule(upcomingFilter, 4);
+                      // Retrieve ALL upcoming timetable slots without artificial limit
+                      const upcomingSlots = stateManager.getUpcomingSchedule(upcomingFilter);
 
                       if (upcomingSlots.length === 0) {
                         return `
-                          <div class="py-6 text-center" style="color: var(--color-on-surface-variant);">
-                            <span class="material-symbols-outlined" style="font-size: 32px;">event_note</span>
-                            <p class="font-body-sm mt-1">No upcoming ${upcomingFilter === 'lab' ? 'lab sessions' : 'scheduled classes'} found.</p>
-                            <button class="btn btn-secondary btn-sm mt-2" onclick="window.ClassTrackApp.openAddSlotModal()">
-                              <span class="material-symbols-outlined" style="font-size: 14px;">add</span> Add Timetable Slot
+                          <div class="py-8 text-center" style="color: var(--color-on-surface-variant);">
+                            <span class="material-symbols-outlined" style="font-size: 36px; opacity: 0.7;">event_note</span>
+                            <p class="font-body-md font-semibold mt-2">No ${upcomingFilter === 'lab' ? 'lab sessions' : 'scheduled classes'} in timetable.</p>
+                            <p class="font-body-sm text-xs opacity-75 mt-0.5">Add course slots to view your weekly upcoming timeline.</p>
+                            <button class="btn btn-secondary btn-sm mt-3" onclick="window.ClassTrackApp.openAddSlotModal()">
+                              <span class="material-symbols-outlined" style="font-size: 15px;">add</span> Add Schedule Slot
                             </button>
                           </div>
                         `;
                       }
 
                       return upcomingSlots.map(slot => `
-                        <div style="background-color: var(--color-surface-container-low); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--color-surface-variant); cursor: pointer;" class="flex items-center justify-between transition-all hover:border-slate-400" onclick="window.ClassTrackApp.showSubjectDetail('${slot.subject.id}')">
-                          <div>
-                            <div class="flex items-center gap-2">
-                              <h4 class="font-body-md font-semibold" style="color: var(--color-on-background);">${slot.subject.name}</h4>
-                              <span class="font-label-sm opacity-70">${slot.subject.code || ''}</span>
+                        <div style="background-color: var(--color-surface-container-low); padding: 12px 14px; border-radius: 10px; border: 1px solid var(--color-surface-variant); cursor: pointer;" class="flex items-center justify-between gap-3 transition-all hover:border-slate-400" onclick="window.ClassTrackApp.showSubjectDetail('${slot.subject.id}')">
+                          <div class="overflow-hidden flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                              <span class="font-label-sm font-bold font-mono px-2 py-0.5 rounded text-[11px]" style="background-color: var(--color-surface-container-high); color: var(--color-primary);">${esc(slot.dayLabel.toUpperCase())}</span>
+                              <span class="font-mono text-xs font-semibold" style="color: var(--color-primary);">${esc(slot.timeStr || slot.time)}</span>
                             </div>
-                            <p class="font-label-sm flex items-center gap-1 mt-1" style="color: var(--color-on-surface-variant);">
-                              <span class="material-symbols-outlined" style="font-size: 14px; color: var(--color-primary);">schedule</span> <strong style="color: var(--color-primary);">${slot.timingLabel}</strong>
-                              <span class="mx-1">•</span>
-                              <span class="material-symbols-outlined" style="font-size: 14px;">location_on</span> ${slot.room || 'TBA'}
+                            <h4 class="font-body-md font-semibold mt-1 truncate" style="color: var(--color-on-background);">${esc(slot.subject.name)}</h4>
+                            <p class="font-label-sm flex items-center gap-1 mt-0.5 text-xs truncate" style="color: var(--color-on-surface-variant);">
+                              <span class="material-symbols-outlined" style="font-size: 13px;">location_on</span> ${esc(slot.room || 'TBA')}
+                              ${slot.subject.code ? `<span class="mx-0.5">•</span><span>${esc(slot.subject.code)}</span>` : ''}
+                              <span class="mx-0.5">•</span>
+                              <span class="material-symbols-outlined" style="font-size: 13px;">person</span> <span>${esc(slot.subject.instructor || 'Faculty')}</span>
                             </p>
                           </div>
-                          <div>
-                            ${slot.isLab ? `<span class="status-chip status-warning" style="font-size: 0.7rem;">Lab</span>` : `<span class="status-chip status-neutral" style="font-size: 0.7rem;">${slot.subject.category || 'Theory'}</span>`}
+                          <div class="shrink-0 flex flex-col items-end gap-1">
+                            ${slot.isLab ? `<span class="status-chip status-warning" style="font-size: 0.7rem;">Lab</span>` : `<span class="status-chip status-neutral" style="font-size: 0.7rem;">${esc(slot.subject.type || 'Theory')}</span>`}
                           </div>
                         </div>
                       `).join('');
@@ -263,15 +271,15 @@ window.ClassTrackDashboard = {
               <div class="edu-card h-full flex flex-col">
                 <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color: var(--color-outline-variant);">
                   <div>
-                    <h3 class="font-headline-md" style="color: var(--color-on-background);">${isSunday ? 'Sunday Holiday' : `${todayName}'s Classes`}</h3>
+                    <h3 class="font-headline-md font-bold" style="color: var(--color-on-background);">${isSunday ? 'Sunday Holiday' : `${todayName}'s Classes`}</h3>
                     <p class="font-label-sm" style="color: var(--color-on-surface-variant);">${isSunday ? 'Public Holiday' : '1-Click Attendance Logger'}</p>
                   </div>
-                  <span class="font-label-sm px-2.5 py-1 rounded-md" style="background-color: var(--color-surface-container-high); color: var(--color-on-surface-variant);">
+                  <span class="font-label-sm font-mono font-bold px-2.5 py-1 rounded-md" style="background-color: var(--color-surface-container-high); color: var(--color-on-surface);">
                     ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                 </div>
 
-                <div class="flex flex-col gap-3 flex-grow overflow-y-auto" style="max-height: 520px;">
+                <div class="flex flex-col gap-3 flex-grow overflow-y-auto" style="max-height: 540px;">
                   ${isSunday ? `
                     <div class="text-center py-6 px-3" style="color: var(--color-on-surface-variant);">
                       <div class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-2.5 shadow-sm" style="background-color: var(--color-secondary-container); color: var(--color-on-secondary-container);">
@@ -293,7 +301,7 @@ window.ClassTrackDashboard = {
                             return `
                               <div style="border: 1px solid var(--color-outline-variant); border-radius: 10px; padding: 10px; background-color: var(--color-surface);" class="flex items-center justify-between gap-2">
                                 <div class="overflow-hidden">
-                                  <span class="font-label-sm font-mono text-xs font-bold block" style="color: var(--color-primary);">${slot.timeStr}</span>
+                                  <span class="font-label-sm font-mono text-xs font-bold block" style="color: var(--color-primary);">${slot.timeStr || slot.time}</span>
                                   <h5 class="font-body-md font-semibold text-sm truncate" style="color: var(--color-on-background);">${subject.name}</h5>
                                   <p class="font-label-sm text-xs" style="color: var(--color-on-surface-variant);">${slot.room || 'TBA'} • ${subject.instructor || 'Faculty'}</p>
                                 </div>
@@ -309,6 +317,9 @@ window.ClassTrackDashboard = {
                       <span class="material-symbols-outlined" style="font-size: 36px; color: var(--color-outline);">event_available</span>
                       <h4 class="font-headline-sm font-bold text-sm mt-1" style="color: var(--color-on-background);">No Classes for ${todayName}</h4>
                       <p class="font-body-sm text-xs mt-0.5" style="color: var(--color-on-surface-variant);">No lectures or labs in your timetable today.</p>
+                      <button class="btn btn-secondary btn-sm mt-3" onclick="window.ClassTrackApp.openLogModal()">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">how_to_reg</span> Mark Custom Attendance
+                      </button>
                     </div>
 
                     ${nextDayClasses.length > 0 ? `
@@ -323,7 +334,7 @@ window.ClassTrackDashboard = {
                             return `
                               <div style="border: 1px solid var(--color-outline-variant); border-radius: 10px; padding: 10px; background-color: var(--color-surface);" class="flex items-center justify-between gap-2">
                                 <div class="overflow-hidden">
-                                  <span class="font-label-sm font-mono text-xs font-bold block" style="color: var(--color-primary);">${slot.timeStr}</span>
+                                  <span class="font-label-sm font-mono text-xs font-bold block" style="color: var(--color-primary);">${slot.timeStr || slot.time}</span>
                                   <h5 class="font-body-md font-semibold text-sm truncate" style="color: var(--color-on-background);">${subject.name}</h5>
                                   <p class="font-label-sm text-xs" style="color: var(--color-on-surface-variant);">${slot.room || 'TBA'} • ${subject.instructor || 'Faculty'}</p>
                                 </div>
@@ -334,7 +345,7 @@ window.ClassTrackDashboard = {
                         </div>
                       </div>
                     ` : `
-                    <div class="text-center mt-2">
+                      <div class="text-center mt-2">
                         <button class="btn btn-secondary btn-sm" onclick="window.ClassTrackApp.openAddSlotModal()">
                           <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Add ${todayName} Class
                         </button>
@@ -351,16 +362,16 @@ window.ClassTrackDashboard = {
                     );
 
                     return `
-                      <div style="border: 1px solid var(--color-surface-variant); border-radius: 12px; padding: 14px; background-color: var(--color-surface); ${isLogged ? 'opacity: 0.95;' : ''}" class="flex flex-col gap-2.5 transition-all hover:border-slate-400">
+                      <div style="border: 1px solid var(--color-surface-variant); border-radius: 12px; padding: 14px; background-color: var(--color-surface); ${isLogged ? 'opacity: 0.98;' : ''}" class="flex flex-col gap-2.5 transition-all hover:border-slate-400">
                         <div class="flex justify-between items-start">
                           <div>
                             <span class="font-label-sm block uppercase tracking-wider font-mono font-bold" style="color: var(--color-primary);">
-                              ${esc(slot.timeStr)}
+                              ${esc(slot.timeStr || slot.time)}
                             </span>
                             <h4 class="font-body-md font-semibold mt-0.5" style="color: var(--color-on-background); cursor: pointer;" onclick="window.ClassTrackApp.showSubjectDetail('${slot.subjectId}')">
                               ${esc(subject.name)}
                             </h4>
-                            <p class="font-label-sm flex items-center gap-1 mt-1" style="color: var(--color-on-surface-variant);">
+                            <p class="font-label-sm flex items-center gap-1 mt-1 text-xs" style="color: var(--color-on-surface-variant);">
                               <span class="material-symbols-outlined" style="font-size: 14px;">location_on</span> ${esc(slot.room || 'TBA')}
                               ${subject.code ? `<span class="mx-1">•</span><span>${esc(subject.code)}</span>` : ''}
                               <span class="mx-1">•</span>
@@ -370,43 +381,47 @@ window.ClassTrackDashboard = {
                         </div>
 
                         ${isLogged ? `
-                          <div class="mt-1 pt-2 border-t flex items-center justify-between" style="border-color: var(--color-outline-variant);">
-                            <div class="flex items-center gap-1.5">
-                              <span class="font-label-sm" style="color: var(--color-on-surface-variant);">Status:</span>
-                              ${isLogged.status === 'present' ? `
-                                <span class="status-chip status-safe"><span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> PRESENT</span>
-                              ` : isLogged.status === 'absent' ? `
-                                <span class="status-chip status-critical"><span class="material-symbols-outlined" style="font-size: 14px;">cancel</span> ABSENT</span>
-                              ` : isLogged.status === 'faculty_absent' ? `
-                                <span class="status-chip status-warning"><span class="material-symbols-outlined" style="font-size: 14px;">person_off</span> FACULTY ABSENT</span>
-                              ` : isLogged.status === 'other_faculty' ? `
-                                <span class="status-chip" style="background-color: rgba(124, 58, 237, 0.15); color: #7C3AED; border: 1px solid rgba(124, 58, 237, 0.3);"><span class="material-symbols-outlined" style="font-size: 14px;">swap_horiz</span> SUBSTITUTE</span>
-                              ` : `
-                                <span class="status-chip status-neutral">${isLogged.status.toUpperCase()}</span>
-                              `}
+                          <div class="mt-1 pt-2 border-t flex flex-col gap-1.5" style="border-color: var(--color-outline-variant);">
+                            <div class="flex items-center justify-between">
+                              <div class="flex items-center gap-1.5">
+                                <span class="font-label-sm text-xs" style="color: var(--color-on-surface-variant);">Status:</span>
+                                ${isLogged.status === 'present' ? `
+                                  <span class="status-chip status-safe"><span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> PRESENT (ATTENDED)</span>
+                                ` : isLogged.status === 'absent' ? `
+                                  <span class="status-chip status-critical"><span class="material-symbols-outlined" style="font-size: 14px;">cancel</span> ABSENT (MISSED)</span>
+                                ` : isLogged.status === 'faculty_absent' ? `
+                                  <span class="status-chip status-warning"><span class="material-symbols-outlined" style="font-size: 14px;">person_off</span> FACULTY ABSENT (FREE)</span>
+                                ` : isLogged.status === 'other_faculty' ? `
+                                  <span class="status-chip" style="background-color: rgba(124, 58, 237, 0.15); color: #7C3AED; border: 1px solid rgba(124, 58, 237, 0.3);"><span class="material-symbols-outlined" style="font-size: 14px;">swap_horiz</span> SUBSTITUTE</span>
+                                ` : isLogged.status === 'od' ? `
+                                  <span class="status-chip status-safe"><span class="material-symbols-outlined" style="font-size: 14px;">verified</span> ON-DUTY</span>
+                                ` : `
+                                  <span class="status-chip status-neutral">${isLogged.status.toUpperCase()}</span>
+                                `}
+                              </div>
+                              <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" title="Undo or re-mark attendance" onclick="window.ClassTrackDashboard.undoLog('${isLogged.id}')">
+                                Change
+                              </button>
                             </div>
-                            <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" title="Undo or re-mark attendance" onclick="window.ClassTrackDashboard.undoLog('${isLogged.id}')">
-                              Change
-                            </button>
+                            ${isLogged.remarks ? `
+                              <p class="font-label-sm text-xs opacity-75 italic" style="color: var(--color-on-surface-variant);">${esc(isLogged.remarks)}</p>
+                            ` : ''}
                           </div>
-                          ${isLogged.remarks ? `
-                            <p class="font-label-sm text-xs opacity-75 italic mt-0.5" style="color: var(--color-on-surface-variant);">${esc(isLogged.remarks)}</p>
-                          ` : ''}
                         ` : `
                           <div class="flex flex-col gap-1.5 mt-1 pt-2 border-t" style="border-color: var(--color-outline-variant);">
                             <div class="flex gap-2">
-                              <button class="btn btn-safe flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'present', '${slot.timeStr}', '${slot.id}')">
+                              <button class="btn btn-safe flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'present', '${slot.timeStr || slot.time}', '${slot.id}')">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Present
                               </button>
-                              <button class="btn btn-danger flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'absent', '${slot.timeStr}', '${slot.id}')">
+                              <button class="btn btn-danger flex-1 btn-sm" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'absent', '${slot.timeStr || slot.time}', '${slot.id}')">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Absent
                               </button>
                             </div>
                             <div class="flex gap-2">
-                              <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; background-color: var(--color-surface-container-high); color: var(--color-on-surface);" title="Faculty is on leave or class cancelled (free period - does not penalize attendance)" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'faculty_absent', '${slot.timeStr}', '${slot.id}')">
-                                <span class="material-symbols-outlined" style="font-size: 14px;">person_off</span> Faculty Absent
+                              <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; background-color: var(--color-surface-container-high); color: var(--color-on-surface);" title="Faculty is on leave or class cancelled (free period - does not penalize attendance)" onclick="window.ClassTrackDashboard.quickLog('${slot.subjectId}', 'faculty_absent', '${slot.timeStr || slot.time}', '${slot.id}')">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">person_off</span> Free Period
                               </button>
-                              <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; border-color: rgba(124, 58, 237, 0.4); color: #7C3AED;" title="Record class taken by substitute/proxy faculty" onclick="window.ClassTrackApp.openSubstituteModal('${slot.subjectId}', '${slot.timeStr}')">
+                              <button class="btn btn-secondary flex-1 btn-sm" style="font-size: 0.75rem; padding: 4px 6px; border-color: rgba(124, 58, 237, 0.4); color: #7C3AED;" title="Record class taken by substitute/proxy faculty" onclick="window.ClassTrackApp.openSubstituteModal('${slot.subjectId}', '${slot.timeStr || slot.time}')">
                                 <span class="material-symbols-outlined" style="font-size: 14px; color: #7C3AED;">swap_horiz</span> Other Faculty
                               </button>
                             </div>
@@ -417,9 +432,12 @@ window.ClassTrackDashboard = {
                   }).join('')}
                 </div>
 
-                <div class="mt-4 pt-3 border-t text-center" style="border-color: var(--color-outline-variant);">
-                  <button class="btn btn-secondary w-full" onclick="window.ClassTrackApp.navigate('schedule')">
-                    <span class="material-symbols-outlined">calendar_month</span> View Full Timetable
+                <div class="mt-4 pt-3 border-t text-center flex items-center gap-2" style="border-color: var(--color-outline-variant);">
+                  <button class="btn btn-secondary flex-1 btn-sm" onclick="window.ClassTrackApp.navigate('schedule')">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">calendar_month</span> Full Timetable
+                  </button>
+                  <button class="btn btn-primary flex-1 btn-sm" onclick="window.ClassTrackApp.openLogModal()">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">how_to_reg</span> Mark Other
                   </button>
                 </div>
               </div>
@@ -443,12 +461,14 @@ window.ClassTrackDashboard = {
     let remarks = 'Quick logged from Dashboard';
     if (status === 'faculty_absent') remarks = 'Faculty Absent / Free Period';
 
-    window.EduTrackState.logAttendance(subjectId, status, {
+    const logRes = window.EduTrackState.logAttendance(subjectId, status, {
       timeStr,
       slotId: slotId || '',
       type: subject?.type === 'lab' ? 'Lab' : 'Lecture',
       remarks
     });
+
+    if (!logRes) return;
 
     let msg = `Marked ${status.toUpperCase()} for ${subject?.name || 'Class'}`;
     let toastType = 'success';

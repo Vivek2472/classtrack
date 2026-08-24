@@ -269,11 +269,11 @@
               <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="signup-password">
                 Create Password <span class="text-error">*</span>
               </label>
-              <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400">8–10 alphanumeric chars</span>
+              <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400">8–10 chars with special char</span>
             </div>
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">lock</span>
-              <input id="signup-password" type="password" name="password" required minlength="8" maxlength="10" pattern="^(?=.*[a-zA-Z])(?=.*[0-9])[a-zA-Z0-9]{8,10}$" placeholder="8-10 letters & numbers" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 44px; border-radius: 10px;" title="Password must be 8 to 10 alphanumeric characters with both letters and numbers.">
+              <input id="signup-password" type="password" name="password" required minlength="8" maxlength="10" pattern="^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,10}$" placeholder="8-10 chars (e.g. Pass@123)" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 44px; border-radius: 10px;" title="Password must be 8 to 10 characters and contain letters, numbers, and at least one special character.">
               <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1" onclick="togglePasswordVisibility('signup-password', this)">
                 <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
               </button>
@@ -416,6 +416,13 @@
       if (!window.ClassTrackAuth.isTrustedEmail(email)) {
         showToast('Disposable or temporary emails are strictly not permitted. Please use Gmail, Outlook, ProtonMail, Yahoo, Zoho, or iCloud.', 'error');
         validateSignupEmail(email);
+        return;
+      }
+
+      // Client-side password validation (8-10 chars with letters, numbers, and special character)
+      const pwCheck = window.ClassTrackAuth.validatePassword(password);
+      if (!pwCheck.valid) {
+        showToast(pwCheck.message, 'error');
         return;
       }
 

@@ -297,12 +297,15 @@
 
         <form id="auth-reset-form" class="flex flex-col gap-4" onsubmit="handleResetPasswordSubmit(event)">
           <div class="flex flex-col gap-1.5">
-            <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="reset-new-password">
-              New Password
-            </label>
+            <div class="flex items-center justify-between">
+              <label class="font-label-sm uppercase tracking-wider font-semibold text-xs" style="color: var(--color-on-surface-variant);" for="reset-new-password">
+                New Password
+              </label>
+              <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400">8–10 chars with special char</span>
+            </div>
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">lock</span>
-              <input id="reset-new-password" type="password" required minlength="6" placeholder="Enter new password" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;">
+              <input id="reset-new-password" type="password" required minlength="8" maxlength="10" pattern="^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,10}$" placeholder="8-10 chars (e.g. Pass@123)" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;" title="Password must be 8 to 10 characters and contain letters, numbers, and at least one special character.">
               <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1" onclick="togglePasswordVisibility('reset-new-password', this)">
                 <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
               </button>
@@ -315,7 +318,7 @@
             </label>
             <div class="relative">
               <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2" style="font-size: 20px; color: var(--color-outline);">lock_clock</span>
-              <input id="reset-confirm-password" type="password" required minlength="6" placeholder="Confirm new password" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;">
+              <input id="reset-confirm-password" type="password" required minlength="8" maxlength="10" pattern="^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9]).{8,10}$" placeholder="Re-enter new password" class="form-input font-body-md" style="padding-left: 42px; padding-right: 42px; height: 46px; border-radius: 10px;">
               <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors p-1" onclick="togglePasswordVisibility('reset-confirm-password', this)">
                 <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
               </button>
@@ -532,6 +535,12 @@
       e.preventDefault();
       const newPass = document.getElementById('reset-new-password')?.value;
       const confirmPass = document.getElementById('reset-confirm-password')?.value;
+
+      const pwCheck = window.ClassTrackAuth.validatePassword(newPass);
+      if (!pwCheck.valid) {
+        showToast(pwCheck.message, 'error');
+        return;
+      }
 
       if (newPass !== confirmPass) {
         showToast('Passwords do not match.', 'error');

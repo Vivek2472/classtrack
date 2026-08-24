@@ -31,7 +31,25 @@ class AuthManager {
 
   async init() {
     const supabase = this.getSupabase();
-    if (!supabase) return;
+    if (!supabase) {
+      // Local-first / Offline mode: restore local session if cached
+      try {
+        const cached = localStorage.getItem('classtrack_auth_user');
+        if (cached) {
+          this.user = JSON.parse(cached);
+          this.session = {
+            user: {
+              id: this.user.id,
+              email: this.user.email,
+              user_metadata: this.user
+            },
+            access_token: 'local_active_token'
+          };
+          this.notify();
+        }
+      } catch (e) {}
+      return;
+    }
 
     try {
       // Check for recovery token in URL hash
@@ -176,7 +194,20 @@ class AuthManager {
 
     const supabase = this.getSupabase();
     if (!supabase) {
-      return { success: false, error: 'Cloud service is initializing. Please try again.' };
+      if (this.user) {
+        this.user.email = cleanEmail;
+        try {
+          localStorage.setItem('classtrack_auth_user', JSON.stringify(this.user));
+        } catch (e) {}
+        const users = this.getLocalUsers();
+        const u = users.find(x => x.id === this.user.id);
+        if (u) {
+          u.email = cleanEmail;
+          this.saveLocalUsers(users);
+        }
+        this.notify();
+      }
+      return { success: true, message: 'Email address updated successfully.' };
     }
 
     try {
@@ -243,13 +274,17 @@ class AuthManager {
       return { valid: false, message: 'Password is required.' };
     }
     if (password.length < 8 || password.length > 10) {
-      return { valid: false, message: 'Password must be exactly 8 to 10 alphanumeric characters.' };
+      return { valid: false, message: 'Password must be exactly 8 to 10 characters long.' };
     }
     const hasLetter = /[a-zA-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    const isAlphaNumeric = /^[a-zA-Z0-9]+$/.test(password);
-    if (!hasLetter || !hasNumber || !isAlphaNumeric) {
-      return { valid: false, message: 'Password must contain only letters and numbers (at least one letter and one number, no special symbols).' };
+    const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+
+    if (!hasLetter || !hasNumber || !hasSpecial) {
+      return { 
+        valid: false, 
+        message: 'Password must be 8–10 characters and contain letters, numbers, and at least one special character (e.g. @, #, $, !, %, *, ?).' 
+      };
     }
     return { valid: true };
   }
@@ -387,7 +422,25 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
-     Sign Up (Compulsory 8-10 Alphanumeric Password)
+     Local-First Storage Helpers (Offline & Local Preview)
+  ----------------------------------------------------- */
+
+  getLocalUsers() {
+    try {
+      return JSON.parse(localStorage.getItem('classtrack_local_users') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  saveLocalUsers(users) {
+    try {
+      localStorage.setItem('classtrack_local_users', JSON.stringify(users));
+    } catch (e) {}
+  }
+
+  /* ----------------------------------------------------
+     Sign Up (Compulsory 8-10 Alphanumeric + Special Char Password)
   ----------------------------------------------------- */
 
   async signUp({ fullName, universityId = '', branch = '', program = '', semester = '', email, password, phone = '' }) {
@@ -395,7 +448,7 @@ class AuthManager {
       return { success: false, error: 'Please fill in all required fields (Name, Email, Password).' };
     }
 
-    // Validate 8-10 alphanumeric password
+    // Validate 8-10 alphanumeric with special character password
     const passCheck = this.validatePassword(password);
     if (!passCheck.valid) {
       return { success: false, error: passCheck.message };
@@ -418,7 +471,66 @@ class AuthManager {
 
     const supabase = this.getSupabase();
     if (!supabase) {
-      return { success: false, error: 'Cloud service is not ready. Please verify your connection.' };
+      // Offline / Local-first Sign Up Mode
+      const users = this.getLocalUsers();
+      const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+      if (existing) {
+        return {
+          success: false,
+          alreadyExists: true,
+          email: cleanEmail,
+          error: `An account with ${cleanEmail} already exists! Please log in instead.`
+        };
+      }
+
+      const sessionToken = this.generateSessionToken();
+      const userObj = {
+        id: 'usr_' + Date.now(),
+        fullName: fullName.trim(),
+        universityId: cleanId,
+        email: cleanEmail,
+        password: password,
+        branch: displayProgram,
+        semester: displaySemester,
+        phone: cleanPhone,
+        gpa: null
+      };
+
+      users.push(userObj);
+      this.saveLocalUsers(users);
+
+      const localSession = {
+        user: {
+          id: userObj.id,
+          email: userObj.email,
+          user_metadata: {
+            fullName: userObj.fullName,
+            full_name: userObj.fullName,
+            universityId: userObj.universityId,
+            rollNo: userObj.universityId,
+            branch: userObj.branch,
+            program: userObj.branch,
+            semester: userObj.semester,
+            phone: userObj.phone
+          }
+        },
+        access_token: 'local_token_' + Date.now()
+      };
+
+      this.setSessionData(localSession);
+
+      if (window.EduTrackState) {
+        window.EduTrackState.updateProfile({
+          name: userObj.fullName,
+          rollNo: userObj.universityId,
+          program: userObj.branch,
+          semester: userObj.semester,
+          email: userObj.email,
+          phone: userObj.phone
+        });
+      }
+
+      return { success: true, user: userObj, requiresConfirmation: false };
     }
 
     try {
@@ -519,7 +631,7 @@ class AuthManager {
   }
 
   /* ----------------------------------------------------
-     Sign In (Enforcing 8-10 Alphanumeric Password & Single Server Session)
+     Sign In (Enforcing 8-10 Alphanumeric + Special Char Password & Single Server Session)
   ----------------------------------------------------- */
 
   async login(email, password) {
@@ -527,7 +639,7 @@ class AuthManager {
       return { success: false, error: 'Please enter your email and password.' };
     }
 
-    // Validate 8-10 alphanumeric password
+    // Validate 8-10 alphanumeric with special char password
     const passCheck = this.validatePassword(password);
     if (!passCheck.valid) {
       return { success: false, error: passCheck.message };
@@ -555,7 +667,63 @@ class AuthManager {
 
     const supabase = this.getSupabase();
     if (!supabase) {
-      return { success: false, error: 'Cloud service is initializing. Please try again.' };
+      // Local-first Offline Login
+      const users = this.getLocalUsers();
+      const matched = users.find(u => u.email.toLowerCase() === cleanEmail);
+
+      if (!matched || matched.password !== password) {
+        const updatedLock = this.recordFailedLogin(cleanEmail);
+        if (updatedLock.isLocked) {
+          return {
+            success: false,
+            isLocked: true,
+            remainingMinutes: 60,
+            error: 'Maximum login attempts (5) exceeded! Login locked for 1 hour.'
+          };
+        } else {
+          return {
+            success: false,
+            remainingAttempts: updatedLock.remainingAttempts,
+            error: `Invalid email or password (${updatedLock.remainingAttempts} attempt(s) remaining before 1-hour lockout).`
+          };
+        }
+      }
+
+      this.clearLoginAttempts(cleanEmail);
+      const sessionToken = this.generateSessionToken();
+
+      const localSession = {
+        user: {
+          id: matched.id,
+          email: matched.email,
+          user_metadata: {
+            fullName: matched.fullName,
+            full_name: matched.fullName,
+            universityId: matched.universityId,
+            rollNo: matched.universityId,
+            branch: matched.branch,
+            program: matched.branch,
+            semester: matched.semester,
+            phone: matched.phone
+          }
+        },
+        access_token: 'local_token_' + Date.now()
+      };
+
+      this.setSessionData(localSession);
+
+      if (window.EduTrackState) {
+        window.EduTrackState.updateProfile({
+          name: matched.fullName,
+          rollNo: matched.universityId,
+          program: matched.branch,
+          semester: matched.semester,
+          email: matched.email,
+          phone: matched.phone
+        });
+      }
+
+      return { success: true, user: this.user };
     }
 
     try {
@@ -632,7 +800,15 @@ class AuthManager {
 
     const supabase = this.getSupabase();
     if (!supabase) {
-      return { success: false, error: 'Cloud service is initializing. Please try again.' };
+      const users = this.getLocalUsers();
+      const exists = users.some(u => u.email.toLowerCase() === cleanEmail);
+      if (exists) {
+        return {
+          success: true,
+          message: `Password reset link simulated for ${cleanEmail}. You can now proceed to set a new password.`
+        };
+      }
+      return { success: false, error: 'No account found with this email address.' };
     }
 
     try {
@@ -662,7 +838,15 @@ class AuthManager {
 
     const supabase = this.getSupabase();
     if (!supabase) {
-      return { success: false, error: 'Cloud service is initializing. Please try again.' };
+      if (this.user) {
+        const users = this.getLocalUsers();
+        const u = users.find(x => x.id === this.user.id || x.email === this.user.email);
+        if (u) {
+          u.password = newPassword;
+          this.saveLocalUsers(users);
+        }
+      }
+      return { success: true, message: 'Password updated successfully! You can now log in with your new password.' };
     }
 
     try {

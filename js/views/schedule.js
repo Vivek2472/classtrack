@@ -610,12 +610,15 @@ window.ClassTrackSchedule = {
     const [y, m, d] = dateStr.split('-');
     const formattedHeader = `${dayName.toUpperCase()} ${d}:${monthNames[parseInt(m, 10) - 1]}:${y.slice(-2)}`;
 
+    const todayStr = window.EduTrackState.getLocalDateString();
+    const isFuture = dateStr > todayStr;
+
     modalContent.innerHTML = `
       <div class="p-6">
         <div class="flex items-center justify-between pb-4 border-b mb-4" style="border-color: var(--color-outline-variant);">
           <div>
             <h3 class="font-headline-md font-bold" style="color: var(--color-on-background);">${formattedHeader}</h3>
-            <p class="font-label-sm" style="color: var(--color-on-surface-variant);">Day Details & Attendance</p>
+            <p class="font-label-sm" style="color: var(--color-on-surface-variant);">${isFuture ? 'Upcoming Day (Future date)' : 'Day Details & Attendance'}</p>
           </div>
           <button class="btn-icon" onclick="window.ClassTrackApp.closeModal()">
             <span class="material-symbols-outlined">close</span>
@@ -641,10 +644,12 @@ window.ClassTrackSchedule = {
                   <div>
                     ${logged ? `
                       <span class="status-chip ${logged.status === 'present' ? 'status-safe' : 'status-critical'} uppercase">${logged.status}</span>
+                    ` : isFuture ? `
+                      <span class="status-chip status-neutral text-xs">Upcoming</span>
                     ` : `
                       <div class="flex gap-1.5">
-                        <button class="btn btn-safe btn-sm" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.logForDate('${slot.subjectId}', 'present', '${dateStr}', '${slot.timeStr}')">Present</button>
-                        <button class="btn btn-danger btn-sm" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.logForDate('${slot.subjectId}', 'absent', '${dateStr}', '${slot.timeStr}')">Absent</button>
+                        <button class="btn btn-safe btn-sm" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.logForDate('${slot.subjectId}', 'present', '${dateStr}', '${slot.timeStr || slot.time}')">Present</button>
+                        <button class="btn btn-danger btn-sm" style="padding: 3px 8px; font-size: 0.75rem;" onclick="window.ClassTrackSchedule.logForDate('${slot.subjectId}', 'absent', '${dateStr}', '${slot.timeStr || slot.time}')">Absent</button>
                       </div>
                     `}
                   </div>
@@ -654,9 +659,11 @@ window.ClassTrackSchedule = {
           </div>
 
           <div class="flex justify-between items-center pt-3 border-t" style="border-color: var(--color-outline-variant);">
-            <button class="btn btn-secondary btn-sm" onclick="window.ClassTrackApp.closeModal(); window.ClassTrackApp.openLogModal();">
-              <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Custom Log
-            </button>
+            ${!isFuture ? `
+              <button class="btn btn-secondary btn-sm" onclick="window.ClassTrackApp.closeModal(); window.ClassTrackApp.openLogModal();">
+                <span class="material-symbols-outlined" style="font-size: 16px;">add</span> Custom Log
+              </button>
+            ` : '<span></span>'}
             <button class="btn btn-primary btn-sm" onclick="window.ClassTrackApp.closeModal()">Done</button>
           </div>
         </div>
@@ -667,13 +674,21 @@ window.ClassTrackSchedule = {
   },
 
   logForDate(subjectId, status, date, timeStr) {
+    const todayStr = window.EduTrackState.getLocalDateString();
+    if (date > todayStr) {
+      window.ClassTrackApp.showToast('Attendance cannot be marked for future dates.', 'error');
+      return;
+    }
+
     const subject = window.EduTrackState.getState().subjects.find(s => s.id === subjectId);
-    window.EduTrackState.logAttendance(subjectId, status, {
+    const logRes = window.EduTrackState.logAttendance(subjectId, status, {
       date,
       timeStr,
       type: subject?.type === 'lab' ? 'Lab' : 'Lecture',
       remarks: `Logged for date ${date}`
     });
+
+    if (!logRes) return;
 
     window.ClassTrackApp.showToast(`Marked ${status.toUpperCase()} for ${subject?.name || 'Class'}`, status === 'present' ? 'success' : 'warning');
     window.ClassTrackApp.closeModal();

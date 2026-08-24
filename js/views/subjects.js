@@ -454,19 +454,21 @@ window.ClassTrackSubjectDetail = {
     let remarks = 'Logged from Subject Detail view';
     if (status === 'faculty_absent') remarks = 'Faculty Absent / Free Period';
 
-    window.EduTrackState.logAttendance(this.currentSubjectId, status, {
+    const logRes = window.EduTrackState.logAttendance(this.currentSubjectId, status, {
       timeStr: 'Class Session',
       type: subject?.type === 'lab' ? 'Lab' : 'Lecture',
       remarks
     });
     
-    let msg = `Logged ${status.toUpperCase()} for ${subject?.name}`;
+    if (!logRes) return;
+
+    let msg = `Logged ${status.toUpperCase()} for ${subject?.name || 'Class'}`;
     let toastType = 'success';
     if (status === 'absent') {
-      msg = `Marked Absent for ${subject?.name}`;
+      msg = `Marked Absent for ${subject?.name || 'Class'}`;
       toastType = 'warning';
     } else if (status === 'faculty_absent') {
-      msg = `Marked Faculty Absent (Exempted) for ${subject?.name}`;
+      msg = `Marked Faculty Absent (Exempted) for ${subject?.name || 'Class'}`;
       toastType = 'info';
     }
 

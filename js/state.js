@@ -233,7 +233,7 @@ class StateManager {
      Dynamic Schedule Resolver
   ----------------------------------------------------- */
 
-  getUpcomingSchedule(filter = 'all', limit = 4) {
+  getUpcomingSchedule(filter = 'all', limit = null) {
     const schedule = this.state.schedule || [];
     const subjects = this.state.subjects || [];
     if (schedule.length === 0 || subjects.length === 0) return [];
@@ -274,7 +274,7 @@ class StateManager {
       } else if (dayDiff === 1) {
         dayLabel = 'Tomorrow';
       } else {
-        dayLabel = slot.day.slice(0, 3);
+        dayLabel = slot.day;
       }
 
       const targetDate = new Date(now);
@@ -294,12 +294,12 @@ class StateManager {
         formattedDate: `${dd}:${mm}:${yy}`,
         fullDateStr: `${slot.day.toUpperCase()} ${dd}:${mm}:${yy}`,
         shortDateStr: `${slot.day.slice(0, 3).toUpperCase()} ${dd}:${mm}:${yy}`,
-        timingLabel: `${dayLabel}, ${slot.timeStr ? slot.timeStr.split(' - ')[0] : slot.time}`
+        timingLabel: `${dayLabel} • ${slot.timeStr || slot.time}`
       });
     });
 
     slotsWithMeta.sort((a, b) => a.sortScore - b.sortScore);
-    return slotsWithMeta.slice(0, limit);
+    return limit ? slotsWithMeta.slice(0, limit) : slotsWithMeta;
   }
 
   getLocalDateString(d = new Date()) {
@@ -317,8 +317,39 @@ class StateManager {
     const subject = this.state.subjects.find(s => s.id === subjectId);
     if (!subject) return false;
 
-    const logDate = date || this.getLocalDateString();
+    const todayDateStr = this.getLocalDateString();
+    const logDate = date || todayDateStr;
 
+    // 1. Prevent marking attendance for future dates
+    if (logDate > todayDateStr) {
+      if (window.ClassTrackApp && window.ClassTrackApp.showToast) {
+        window.ClassTrackApp.showToast('Attendance cannot be marked for future dates.', 'error');
+      }
+      return false;
+    }
+
+    // 2. Prevent duplicate marks for the same subject on the same day/slot - update existing in place!
+    const existingLog = this.state.logs.find(l => 
+      l.subjectId === subjectId && 
+      l.date === logDate && 
+      ((slotId && l.slotId === slotId) || (!slotId && (!l.slotId || l.timeStr === timeStr)))
+    );
+
+    if (existingLog) {
+      this.updateLogStatus(existingLog.id, status);
+      if (remarks) existingLog.remarks = remarks;
+      if (type) existingLog.type = type;
+      if (timeStr) existingLog.timeStr = timeStr;
+      this.saveState();
+
+      if (window.ClassTrackSync) {
+        window.ClassTrackSync.syncAttendanceLog(existingLog, 'update');
+        window.ClassTrackSync.syncSubject(subject, 'upsert');
+      }
+      return existingLog;
+    }
+
+    // 3. New Log Entry
     if (status === 'present' || status === 'od' || status === 'other_faculty') {
       subject.total = (subject.total || 0) + 1;
       subject.attended = (subject.attended || 0) + 1;
@@ -358,6 +389,7 @@ class StateManager {
 
     const subject = this.state.subjects.find(s => s.id === log.subjectId);
     if (subject) {
+      // Revert previous counter contribution
       if (prevStatus === 'present' || prevStatus === 'od' || prevStatus === 'other_faculty') {
         subject.attended = Math.max(0, (subject.attended || 1) - 1);
         subject.total = Math.max(0, (subject.total || 1) - 1);
@@ -366,6 +398,7 @@ class StateManager {
         subject.total = Math.max(0, (subject.total || 1) - 1);
       }
 
+      // Add new counter contribution (exempted statuses like faculty_absent/holiday/cancelled do not increment counters)
       if (newStatus === 'present' || newStatus === 'od' || newStatus === 'other_faculty') {
         subject.attended = (subject.attended || 0) + 1;
         subject.total = (subject.total || 0) + 1;
@@ -380,6 +413,9 @@ class StateManager {
 
     if (window.ClassTrackSync) {
       window.ClassTrackSync.syncAttendanceLog(log, 'update');
+      if (subject) {
+        window.ClassTrackSync.syncSubject(subject, 'upsert');
+      }
     }
 
     return true;

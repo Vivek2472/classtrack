@@ -991,8 +991,8 @@ window.ClassTrackApp = {
             </div>
 
             <div class="form-group">
-              <label class="form-label">Date</label>
-              <input type="date" name="date" class="form-input" value="${new Date().toISOString().split('T')[0]}" required>
+              <label class="form-label">Date <span class="text-xs text-slate-500 font-normal">(Today or Past dates only)</span></label>
+              <input type="date" name="date" class="form-input" value="${window.EduTrackState.getLocalDateString()}" max="${window.EduTrackState.getLocalDateString()}" required>
             </div>
           </div>
 
@@ -1105,20 +1105,20 @@ window.ClassTrackApp = {
     const status = formData.get('status') || 'other_faculty';
     const userRemarks = formData.get('remarks') || '';
     const remarks = `Proxy Class by ${substituteFaculty}${userRemarks ? ': ' + userRemarks : ''}`;
-    const date = new Date().toISOString().split('T')[0];
+    const date = window.EduTrackState.getLocalDateString();
 
-    window.EduTrackState.logAttendance(targetSubjectId, status, {
+    const logRes = window.EduTrackState.logAttendance(targetSubjectId, status, {
       date,
       type: 'Lecture',
       timeStr: timeStr || 'Proxy Session',
       remarks
     });
 
+    if (!logRes) return;
+
     this.closeModal();
     this.showToast(`Logged substitute class by ${substituteFaculty}!`, 'success');
-    if (window.location.hash.includes('dashboard') || !window.location.hash) {
-      window.ClassTrackDashboard?.render(document.getElementById('view-content'));
-    }
+    this.refreshCurrentView();
   },
 
   submitLogAttendance(e) {
@@ -1130,22 +1130,31 @@ window.ClassTrackApp = {
       return;
     }
 
-    const status = formData.get('status');
-    const date = formData.get('date');
-    const type = formData.get('type');
-    const timeStr = formData.get('timeStr');
-    const remarks = formData.get('remarks');
+    const status = formData.get('status') || 'present';
+    const date = formData.get('date') || window.EduTrackState.getLocalDateString();
+    const type = formData.get('type') || 'Lecture';
+    const timeStr = (formData.get('timeStr') || '').trim() || 'Class Session';
+    const remarks = (formData.get('remarks') || '').trim();
 
-    window.EduTrackState.logAttendance(subjectId, status, { date, type, timeStr, remarks });
+    const todayStr = window.EduTrackState.getLocalDateString();
+    if (date > todayStr) {
+      this.showToast('Attendance cannot be marked for future dates.', 'error');
+      return;
+    }
+
+    const logRes = window.EduTrackState.logAttendance(subjectId, status, { date, type, timeStr, remarks });
+    if (!logRes) return;
+
     this.closeModal();
     
-    let statusLabel = 'PRESENT';
-    if (status === 'absent') statusLabel = 'ABSENT';
-    if (status === 'faculty_absent') statusLabel = 'FACULTY ABSENT';
+    let statusLabel = 'PRESENT (ATTENDED)';
+    if (status === 'absent') statusLabel = 'ABSENT (MISSED)';
+    if (status === 'faculty_absent') statusLabel = 'FACULTY ABSENT (FREE)';
     if (status === 'other_faculty') statusLabel = 'SUBSTITUTE CLASS';
     if (status === 'od') statusLabel = 'ON-DUTY LEAVE';
-    if (status === 'holiday') statusLabel = 'HOLIDAY';
-    this.showToast(`Attendance marked as ${statusLabel}!`, 'success');
+    if (status === 'holiday') statusLabel = 'HOLIDAY / CANCELLED';
+    this.showToast(`Attendance recorded as ${statusLabel}!`, 'success');
+    this.refreshCurrentView();
   },
 
   /* ----------------------------------------------------

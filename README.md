@@ -44,7 +44,7 @@ Maintaining the required attendance threshold (typically 75% or 85%) across lect
 ### 5. Profile & Session Management
 - **Single Edit Hub**: Manage student name, roll number / university ID, degree program, and current semester in a unified modal.
 - **Email Verification**: Safeguard student identity with verification-confirmed email updates.
-- **Strict Password Standard**: Enforces 8–10 alphanumeric password security across student accounts.
+- **Strict Password Standard**: Enforces 8–10 characters containing letters, numbers, and special characters across student accounts.
 - **Dark & Light Mode**: Seamless theme switching tailored for study sessions in any lighting environment.
 
 ---
