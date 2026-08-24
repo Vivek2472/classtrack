@@ -299,6 +299,15 @@ class StateManager {
     });
 
     slotsWithMeta.sort((a, b) => a.sortScore - b.sortScore);
+
+    if (filter === 'all') {
+      // Show ONLY the schedule for the next scheduled day
+      if (slotsWithMeta.length === 0) return [];
+      const nextDayDiff = slotsWithMeta[0].dayDiff;
+      return slotsWithMeta.filter(slot => slot.dayDiff === nextDayDiff);
+    }
+
+    // For 'lab': return the full upcoming week's lab schedule
     return limit ? slotsWithMeta.slice(0, limit) : slotsWithMeta;
   }
 
@@ -328,18 +337,18 @@ class StateManager {
       return false;
     }
 
-    // 2. Prevent duplicate marks for the same subject on the same day/slot - update existing in place!
+    // 2. Strict single entry per subject per day - modify existing entry in place!
     const existingLog = this.state.logs.find(l => 
       l.subjectId === subjectId && 
-      l.date === logDate && 
-      ((slotId && l.slotId === slotId) || (!slotId && (!l.slotId || l.timeStr === timeStr)))
+      l.date === logDate
     );
 
     if (existingLog) {
       this.updateLogStatus(existingLog.id, status);
-      if (remarks) existingLog.remarks = remarks;
+      if (remarks !== undefined && remarks !== '') existingLog.remarks = remarks;
       if (type) existingLog.type = type;
       if (timeStr) existingLog.timeStr = timeStr;
+      if (slotId) existingLog.slotId = slotId;
       this.saveState();
 
       if (window.ClassTrackSync) {

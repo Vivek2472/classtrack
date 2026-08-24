@@ -643,7 +643,14 @@ window.ClassTrackSchedule = {
                   </div>
                   <div>
                     ${logged ? `
-                      <span class="status-chip ${logged.status === 'present' ? 'status-safe' : 'status-critical'} uppercase">${logged.status}</span>
+                      <div class="flex items-center gap-2">
+                        <span class="status-chip ${logged.status === 'present' ? 'status-safe' : logged.status === 'absent' ? 'status-critical' : logged.status === 'faculty_absent' ? 'status-warning' : 'status-neutral'} uppercase">${logged.status === 'present' ? 'PRESENT' : logged.status === 'absent' ? 'ABSENT' : logged.status.toUpperCase()}</span>
+                        ${!isFuture ? `
+                          <button class="btn btn-secondary btn-sm" style="padding: 2px 7px; font-size: 0.72rem;" title="Switch status" onclick="window.ClassTrackSchedule.logForDate('${slot.subjectId}', '${logged.status === 'present' ? 'absent' : 'present'}', '${dateStr}', '${slot.timeStr || slot.time}')">
+                            Switch to ${logged.status === 'present' ? 'Absent' : 'Present'}
+                          </button>
+                        ` : ''}
+                      </div>
                     ` : isFuture ? `
                       <span class="status-chip status-neutral text-xs">Upcoming</span>
                     ` : `

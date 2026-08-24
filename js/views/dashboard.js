@@ -209,13 +209,12 @@ window.ClassTrackDashboard = {
                     <div class="flex items-center gap-2" style="color: var(--color-secondary);">
                       <span class="material-symbols-outlined">${(this.upcomingFilter || 'all') === 'lab' ? 'science' : 'calendar_clock'}</span>
                       <div>
-                        <h3 class="font-headline-md font-bold" style="color: var(--color-on-background);">${(this.upcomingFilter || 'all') === 'lab' ? 'Upcoming Labs' : 'Upcoming Schedule'}</h3>
+                        <h3 class="font-headline-md font-bold" style="color: var(--color-on-background);">${(this.upcomingFilter || 'all') === 'lab' ? 'Upcoming Labs (Weekly)' : 'Upcoming Schedule'}</h3>
                       </div>
                     </div>
                     <div class="flex items-center gap-1">
                       <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'all' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('all')">All</button>
-                      <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'lab' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('lab')">Labs Only</button>
-                      <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'theory' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('theory')">Theory</button>
+                      <button class="btn btn-sm ${(this.upcomingFilter || 'all') === 'lab' ? 'btn-primary' : 'btn-secondary'}" style="font-size: 0.72rem; padding: 2px 8px;" onclick="window.ClassTrackDashboard.setUpcomingFilter('lab')">Labs</button>
                     </div>
                   </div>
 
@@ -223,15 +222,15 @@ window.ClassTrackDashboard = {
                     ${(() => {
                       const esc = str => (window.ClassTrackApp ? window.ClassTrackApp.escapeHTML(str) : (str || ''));
                       const upcomingFilter = this.upcomingFilter || 'all';
-                      // Retrieve ALL upcoming timetable slots without artificial limit
+                      // Retrieve upcoming schedule: Next Day for 'all', full week for 'lab'
                       const upcomingSlots = stateManager.getUpcomingSchedule(upcomingFilter);
 
                       if (upcomingSlots.length === 0) {
                         return `
                           <div class="py-8 text-center" style="color: var(--color-on-surface-variant);">
                             <span class="material-symbols-outlined" style="font-size: 36px; opacity: 0.7;">event_note</span>
-                            <p class="font-body-md font-semibold mt-2">No ${upcomingFilter === 'lab' ? 'lab sessions' : 'scheduled classes'} in timetable.</p>
-                            <p class="font-body-sm text-xs opacity-75 mt-0.5">Add course slots to view your weekly upcoming timeline.</p>
+                            <p class="font-body-md font-semibold mt-2">${upcomingFilter === 'lab' ? 'No lab sessions scheduled this week.' : 'No upcoming classes scheduled.'}</p>
+                            <p class="font-body-sm text-xs opacity-75 mt-0.5">${upcomingFilter === 'lab' ? 'All scheduled practical labs for the week will appear here.' : 'Timetable slots for the next day will appear here.'}</p>
                             <button class="btn btn-secondary btn-sm mt-3" onclick="window.ClassTrackApp.openAddSlotModal()">
                               <span class="material-symbols-outlined" style="font-size: 15px;">add</span> Add Schedule Slot
                             </button>
@@ -357,8 +356,7 @@ window.ClassTrackDashboard = {
                     const todayDateStr = window.EduTrackState.getLocalDateString();
                     const isLogged = (state.logs || []).find(l => 
                       l.subjectId === slot.subjectId && 
-                      l.date === todayDateStr && 
-                      ((l.slotId && l.slotId === slot.id) || (l.timeStr && l.timeStr === slot.timeStr) || (!l.slotId && !l.timeStr))
+                      l.date === todayDateStr
                     );
 
                     return `
